@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1790715262926,
+      "tag": "0000_supreme_expediter",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1790716928205,
+      "tag": "0001_fluffy_mother_askani",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790717766404,
+      "tag": "0002_square_lady_ursula",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1790775826118,
+      "tag": "0003_easy_runaways",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1790776098941,
+      "tag": "0004_foamy_gateway",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1790844236305,
+      "tag": "0005_easy_pete_wisdom",
+      "breakpoints": true
+    }
+  ]
+}
