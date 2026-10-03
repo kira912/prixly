@@ -11,6 +11,10 @@ export const RATE_LIMITS = {
   watch: [{ limit: 30, windowSec: 60 }],
   pushSubscribe: [{ limit: 10, windowSec: 3600 }],
   pushTest: [{ limit: 3, windowSec: 60 }],
+  // 5 pages Amazon par comparaison
+  compare: [{ limit: 3, windowSec: 60 }, { limit: 20, windowSec: 86_400 }],
+  // Code d'accès : freine les essais au hasard
+  login: [{ limit: 5, windowSec: 60 }, { limit: 30, windowSec: 86_400 }],
 } satisfies Record<string, RateLimitRule[]>
 
 /** Nombre maximum de produits suivis par appareil : chaque suivi coûte un scraping toutes les 6 h. */

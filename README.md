@@ -9,6 +9,8 @@ Depuis l'appli Amazon ou AliExpress sur Android : **Partager → Prixly**. La PW
 - **V1** : partager ou coller un lien Amazon / AliExpress → fiche produit (prix, frais de port, total, délai, note), cache et historique des relevés.
 - **Suivi de prix** : « Suivre le prix » sur une fiche → relevé automatique toutes les 6 h, graphique de l'évolution du total, plus bas / plus haut, variation depuis le prix précédent.
 - V2 : recherche d'équivalents par image et comparaison des coûts totaux.
+- **Avis sur le prix** : sur la fiche, « bon moment pour acheter », « prix habituel » ou « prix élevé » selon la moyenne des 90 derniers jours (dès 7 jours d'historique), et vérification du prix barré : promo réelle, ou douteuse si ce prix n'a jamais été pratiqué en 30 jours de suivi.
+- **Autres Amazon** : sur une fiche Amazon, bouton « Comparer » → prix du même ASIN sur Amazon Allemagne, Espagne, Italie, Pays-Bas et Belgique.
 - **Alertes de prix** : notification Web Push quand un produit suivi baisse (≥ 5 % ou ≥ 0,50 €), atteint un nouveau plus bas ou passe sous un prix cible.
 - V4 : Temu, matching maison.
 
@@ -64,6 +66,25 @@ Sans clés, l'appli fonctionne mais les alertes sont désactivées. Changer de c
 - Plus bas, plus haut et prix précédent sont **stockés sur la ligne produit** et mis à jour à chaque relevé (`nextStats` dans `server/lib/history.ts`) : la liste des produits lit une ligne par produit, sans toucher à l'historique ; seule la fiche produit lit les paliers de son produit.
 - En cas d'échec, l'erreur est affichée sur la fiche et dans la liste.
 
+## Code d'accès
+
+`NUXT_ACCESS_CODE` rend l'appli privée : sans le cookie d'accès, les pages renvoient vers `/login` (puis vers la page demandée, partage compris) et l'API répond 401. Le code se saisit une fois par appareil (cookie httpOnly d'un an) ; le changer déconnecte tout le monde. Restent publics : `/login`, `/api/login` (5 essais / min, 30 / jour par IP), `/api/cron/refresh` (protégé par `CRON_SECRET`) et les fichiers statiques (manifeste, service worker, icônes), pour que la PWA s'installe. Sans la variable, l'appli est ouverte (pratique en dev).
+
+## Avis sur le prix
+
+Calculés à l'affichage de la fiche à partir de l'historique (`priceInsight` et `checkListPrice` dans `server/lib/history.ts`) :
+
+- **Bon moment pour acheter ?** Total actuel comparé à la moyenne des 90 derniers jours, chaque palier pesant selon sa durée : plus bas observé, bon prix (≥ 5 % sous la moyenne), prix habituel, prix élevé (≥ 10 % au-dessus). Rien sous 7 jours d'historique.
+- **Prix barré** (`list_price_cents`, relevé par les extracteurs : bloc prix principal d'Amazon, prix d'origine d'AliExpress) : comparé au prix le plus haut de l'article relevé (hors port). Déjà pratiqué → promo réelle ; jamais vu en 30 jours de suivi ou plus → promo douteuse ; sinon, pas encore vérifiable. Les fixtures actuelles n'ont pas de promo : à confirmer sur une vraie page en promotion.
+
+## Comparaison entre Amazon européens
+
+Depuis une fiche Amazon, « Comparer » relève le même ASIN sur les autres Amazon en euros (`server/lib/marketplaces.ts` : fr, de, es, it, nl, be ; amazon.co.uk exclu pour la livre et la douane). Même extracteur que le relevé principal, 5 requêtes décalées de 0,6 s ; une comparaison de moins de 30 min est resservie telle quelle. Résultat dans `marketplace_offers` (un relevé par pays, sans historique), jamais rafraîchi par le relevé planifié.
+
+- On compare le **prix de l'article seul** : Amazon calcule port et délai selon l'IP du serveur (France en local, États-Unis sur Vercel), pas selon l'utilisateur. La TVA est ajustée au taux français au paiement.
+- Un captcha sur l'un des pays met Amazon en retrait pour les relevés planifiés, comme tout relevé.
+- Le même ASIN désigne presque toujours le même produit, mais pas systématiquement : vérifier la fiche avant d'acheter.
+
 ## Limites anti-abus
 
 Chaque analyse de lien ou actualisation fait scraper **le serveur** : c'est son IP qui se fait bannir. Limites par IP (`server/utils/rate-limit.ts`) :
@@ -75,6 +96,8 @@ Chaque analyse de lien ou actualisation fait scraper **le serveur** : c'est son 
 | Suivre / ne plus suivre | 30 / min |
 | S'abonner aux notifications | 10 / h |
 | Notification de test | 3 / min |
+| Comparer les Amazon européens | 3 / min, 20 / jour |
+| Code d'accès | 5 / min, 30 / jour |
 
 Plus 50 produits suivis maximum par appareil (chaque suivi = un scraping toutes les 6 h). Au-delà : réponse 429 avec `Retry-After`.
 
@@ -94,7 +117,7 @@ En serverless, pas de disque persistant ni de process permanent : la base est su
    Reprendre les données locales (optionnel) : `turso db create prixly --from-file data/prixly.db`.
    Ou depuis Vercel (Storage → Turso) : l'intégration crée `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN`, lues à défaut de `NUXT_DB_URL` / `NUXT_DB_AUTH_TOKEN`.
 2. **Projet Vercel** : importer le dépôt (preset Nuxt détecté, réglages dans `vercel.json`). Variables d'environnement :
-   `NUXT_DB_URL`, `NUXT_DB_AUTH_TOKEN`, `NUXT_VAPID_PUBLIC_KEY`, `NUXT_VAPID_PRIVATE_KEY`, `NUXT_VAPID_SUBJECT`, `CRON_SECRET` (`openssl rand -hex 32`), et de préférence `PRIXLY_PROXY_URL`. Modèle : `.env.example`.
+   `NUXT_ACCESS_CODE`, `NUXT_DB_URL`, `NUXT_DB_AUTH_TOKEN`, `NUXT_VAPID_PUBLIC_KEY`, `NUXT_VAPID_PRIVATE_KEY`, `NUXT_VAPID_SUBJECT`, `CRON_SECRET` (`openssl rand -hex 32`), et de préférence `PRIXLY_PROXY_URL`. Modèle : `.env.example`.
    Le build lance `pnpm db:migrate` avant `pnpm build` : les migrations sont appliquées à chaque déploiement, preview compris (les previews partagent la base de prod, sauf variables distinctes pour l'environnement Preview).
 3. **Relevé planifié** : le cron Vercel du plan Hobby ne tourne qu'une fois par jour, c'est donc GitHub Actions (`.github/workflows/refresh-prices.yml`) qui appelle `GET /api/cron/refresh` toutes les 15 min avec `Authorization: Bearer $CRON_SECRET`. Dans le dépôt GitHub : secret `CRON_SECRET`, variable `PRIXLY_URL` (URL de prod, sans `/` final).
    Chaque appel relève les produits dont le dernier relevé a plus de `PRIXLY_REFRESH_INTERVAL_H` heures (6), les plus anciens d'abord, et s'arrête avant `PRIXLY_REFRESH_BUDGET_SEC` secondes (50) ; le reste passe à l'appel suivant (~8 produits par appel, ~190 par tranche de 6 h). Un verrou en base empêche deux passages simultanés.
@@ -131,5 +154,5 @@ Le code d'extraction est dans `server/lib/` (indépendant de Nuxt, testé avec V
 
 - Scraping : fragile par nature, et contraire aux CGU d'Amazon. Usage personnel uniquement, avec le cache pour limiter les requêtes.
 - Amazon : les frais de port affichés sont ceux du bloc de livraison principal (ex. « gratuite lors de votre première commande »), sans tenir compte de ton compte Prime.
-- Pas d'authentification : ne pas exposer publiquement sans protection (auth du reverse proxy, Tailscale…).
+- Pas de comptes : un seul code d'accès commun (`NUXT_ACCESS_CODE`), à définir avant d'exposer l'appli.
 - AliExpress : c'est le prix de la variante (SKU) sélectionnée par défaut qui est retenu.

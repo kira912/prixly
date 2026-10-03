@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Product, Watch } from '~~/server/database/schema'
-import type { PricePoint, PriceStats } from '~~/server/lib/history'
+import type { MarketplaceOffer, Product, Watch } from '~~/server/database/schema'
+import type { ListPriceCheck, PriceInsight, PricePoint, PriceStats } from '~~/server/lib/history'
 
 const route = useRoute()
-const { data, error, refresh: reload } = await useFetch<{ product: Product, points: PricePoint[], stats: PriceStats, watch: Watch | null }>(
+const { data, error, refresh: reload } = await useFetch<{ product: Product, points: PricePoint[], stats: PriceStats, insight: PriceInsight | null, listPrice: ListPriceCheck | null, watch: Watch | null, offers: MarketplaceOffer[] }>(
   () => `/api/products/${route.params.id}`,
 )
 
@@ -97,7 +97,10 @@ useHead(() => ({ title: product.value ? `${product.value.title} · Prixly` : 'Pr
       <dl class="cost-table">
         <div>
           <dt>Prix</dt>
-          <dd>{{ product.priceCents == null ? 'Indisponible' : formatMoney(product.priceCents, product.currency) }}</dd>
+          <dd>
+            <s v-if="product.listPriceCents" class="muted small list-price">{{ formatMoney(product.listPriceCents, product.currency) }}</s>
+            {{ product.priceCents == null ? 'Indisponible' : formatMoney(product.priceCents, product.currency) }}
+          </dd>
         </div>
         <div>
           <dt>Livraison</dt>
@@ -125,6 +128,12 @@ useHead(() => ({ title: product.value ? `${product.value.title} · Prixly` : 'Pr
       <p v-if="product.shippingNote" class="muted small">
         {{ product.shippingNote }}
       </p>
+      <PriceVerdict
+        :insight="data?.insight ?? null"
+        :list-price="data?.listPrice ?? null"
+        :currency="product.currency"
+        :watched="!!follow"
+      />
 
       <div class="actions">
         <a :href="product.url" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
@@ -177,6 +186,13 @@ useHead(() => ({ title: product.value ? `${product.value.title} · Prixly` : 'Pr
         </template>
       </p>
     </div>
+
+    <MarketplaceOffers
+      v-if="product.platform === 'amazon'"
+      :product="product"
+      :offers="data?.offers ?? []"
+      @updated="reload"
+    />
 
     <section class="history">
       <h2>Évolution du prix total</h2>

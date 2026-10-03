@@ -18,6 +18,8 @@ describe('parseAmazonHtml', () => {
       currency: 'EUR',
       // Achat ponctuel, pas le prix « abonnez-vous » (10,19 €)
       priceCents: 1199,
+      // « Prix unique » barré = offre sans abonnement, hors du bloc prix principal : pas un prix barré
+      listPriceCents: null,
       shippingCents: 0,
       deliveryText: 'vendredi 2 octobre',
       deliveryMinDays: 3,
@@ -26,6 +28,15 @@ describe('parseAmazonHtml', () => {
       reviewCount: 141570,
     })
     expect(p.image).toMatch(/^https:\/\/m\.media-amazon\.com\/images\/I\//)
+  })
+
+  it('lit le prix barré du bloc prix principal', () => {
+    const page = `<span id="productTitle">Produit</span>
+      <div id="corePriceDisplay_desktop_feature_div">
+        <span class="a-price apex-pricetopay-value"><span class="a-offscreen">14,99 €</span></span>
+        <span class="basisPrice">Prix conseillé : <span class="a-price a-text-price" data-a-strike="true"><span class="a-offscreen">24,99 €</span></span></span>
+      </div>`
+    expect(parseAmazonHtml(page, ref)).toMatchObject({ priceCents: 1499, listPriceCents: 2499 })
   })
 
   it('échoue proprement sur une page sans produit', () => {
@@ -44,6 +55,8 @@ describe('parseAliExpressResult', () => {
       title: expect.stringContaining('Câble de charge USB Type C'),
       currency: 'EUR',
       priceCents: 247,
+      // Prix d'origine = prix de vente : pas de remise
+      listPriceCents: null,
       shippingCents: 199,
       deliveryMinDays: 4,
       deliveryMaxDays: 9,
@@ -53,6 +66,12 @@ describe('parseAliExpressResult', () => {
     })
     expect(p.shippingNote).toBe('AliExpress Selection Standard · gratuite dès 10,00€ d\'achat · expédié depuis Chine')
     expect(p.image).toMatch(/^https:\/\/ae-pic-a1\.aliexpress-media\.com\//)
+  })
+
+  it('lit le prix avant remise', () => {
+    const discounted = structuredClone(result)
+    discounted.GLOBAL_DATA.globalData.eventInfo.clcEvent.originalPriceCent = 499
+    expect(parseAliExpressResult(discounted, ref).listPriceCents).toBe(499)
   })
 
   it('signale un produit introuvable', () => {

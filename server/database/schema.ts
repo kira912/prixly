@@ -11,6 +11,8 @@ export const products = sqliteTable('products', {
   currency: text('currency').notNull().default('EUR'),
   priceCents: integer('price_cents'),
   shippingCents: integer('shipping_cents'),
+  /** Prix barré affiché par la plateforme (article seul, hors port) ; null si aucun */
+  listPriceCents: integer('list_price_cents'),
   shippingNote: text('shipping_note'),
   deliveryMinDays: integer('delivery_min_days'),
   deliveryMaxDays: integer('delivery_max_days'),
@@ -93,9 +95,29 @@ export const productViews = sqliteTable('product_views', {
   index('product_views_recent').on(t.subscriberId, t.viewedAt),
 ])
 
+/**
+ * Prix du même produit (même ASIN) sur les autres Amazon européens, relevés à la demande depuis la fiche.
+ * Un relevé par pays, remplacé au suivant : pas d'historique.
+ */
+export const marketplaceOffers = sqliteTable('marketplace_offers', {
+  productId: integer('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  /** fr, de, es, it, nl, be (server/lib/marketplaces.ts) */
+  marketplace: text('marketplace').notNull(),
+  url: text('url').notNull(),
+  /** ok : prix relevé ; unavailable : page trouvée sans offre ; not_found : produit absent de ce pays ; error : relevé en échec */
+  status: text('status', { enum: ['ok', 'unavailable', 'not_found', 'error'] }).notNull(),
+  priceCents: integer('price_cents'),
+  currency: text('currency'),
+  error: text('error'),
+  fetchedAt: integer('fetched_at', { mode: 'timestamp_ms' }).notNull(),
+}, t => [
+  primaryKey({ columns: [t.productId, t.marketplace] }),
+])
+
 export type Product = typeof products.$inferSelect
 export type Watch = typeof watches.$inferSelect
 export type PriceSnapshot = typeof priceSnapshots.$inferSelect
+export type MarketplaceOffer = typeof marketplaceOffers.$inferSelect
 
 /**
  * Petit stockage clé / valeur partagé par toutes les instances (serverless) : compteurs anti-abus,

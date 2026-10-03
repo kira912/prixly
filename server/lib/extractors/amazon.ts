@@ -28,6 +28,7 @@ export function parseAmazonHtml(html: string, ref: ProductRef, now = new Date())
     image: readImage($),
     currency,
     priceCents,
+    listPriceCents: readListPrice($, priceCents),
     ...delivery,
     rating: parseRating($('#acrPopover').attr('title')),
     reviewCount: parseCount($('#acrCustomerReviewText').first().text()),
@@ -59,6 +60,19 @@ function readPrice($: cheerio.CheerioAPI, html: string): { priceCents: number | 
     }
   }
   return { priceCents: null, currency: 'EUR' }
+}
+
+/**
+ * Prix barré du bloc prix principal (« Prix conseillé », « Ancien prix », « Prix le plus bas des 30 derniers jours »…).
+ * Hors de ce bloc, les prix barrés appartiennent à d'autres offres (abonnement, produits sponsorisés).
+ */
+function readListPrice($: cheerio.CheerioAPI, priceCents: number | null): number | null {
+  if (priceCents == null) return null
+  const el = $('#corePriceDisplay_desktop_feature_div, #corePrice_feature_div')
+    .find('.basisPrice .a-offscreen, .apex-basisprice-value .a-offscreen')
+    .first()
+  const cents = parsePrice(el.text())?.cents
+  return cents != null && cents > priceCents ? cents : null
 }
 
 function readImage($: cheerio.CheerioAPI): string | null {

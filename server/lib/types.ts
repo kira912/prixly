@@ -15,6 +15,8 @@ export interface ProductInfo extends ProductRef {
   /** Montants en centimes ; null si non trouvé */
   priceCents: number | null
   shippingCents: number | null
+  /** Prix barré affiché par la plateforme (prix de l'article, hors port), seulement s'il dépasse le prix ; sinon null */
+  listPriceCents: number | null
   /** Ex. « Livraison gratuite dès 10,00€ d'achat » */
   shippingNote: string | null
   deliveryMinDays: number | null

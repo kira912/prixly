@@ -1,0 +1,1 @@
+ALTER TABLE `products` ADD `list_price_cents` integer;

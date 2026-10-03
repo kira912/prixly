@@ -2,7 +2,7 @@ import { and, asc, desc, eq, exists, isNull, lt, notExists, or, sql } from 'driz
 import { priceSnapshots, products, productViews, watches, type Product } from '../database/schema'
 import { interleaveByPlatform, nextBackoff, type BackoffState } from '../lib/pacing'
 import { extractProduct } from '../lib/extractors'
-import { nextStats, samePrice, snapshotTotal, statsOf, toPricePoints, type PriceStats } from '../lib/history'
+import { checkListPrice, nextStats, priceInsight, samePrice, snapshotTotal, statsOf, toPricePoints, type PriceStats } from '../lib/history'
 import { resolveProductRef } from '../lib/links'
 import { ExtractError, type Platform, type ProductInfo, type ProductRef } from '../lib/types'
 
@@ -18,7 +18,7 @@ async function backoffRemainingMs(platform: Platform): Promise<number> {
 }
 
 /** Relève un produit en tenant le compte des blocages, quel que soit le déclencheur. */
-async function extractTracked(ref: ProductRef): Promise<ProductInfo> {
+export async function extractTracked(ref: ProductRef): Promise<ProductInfo> {
   try {
     const info = await extractProduct(ref)
     await kvDelete(backoffKey(ref.platform))
@@ -179,7 +179,13 @@ export async function getPriceHistory(product: Product) {
     .where(eq(priceSnapshots.productId, product.id))
     .orderBy(asc(priceSnapshots.capturedAt))
     .all()
-  return { points: toPricePoints(snapshots), stats: statsOf(product) }
+  const points = toPricePoints(snapshots)
+  return {
+    points,
+    stats: statsOf(product),
+    insight: priceInsight(points),
+    listPrice: checkListPrice(product.listPriceCents, product.priceCents, snapshots),
+  }
 }
 
 export interface RefreshReport {

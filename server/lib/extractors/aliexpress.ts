@@ -100,6 +100,11 @@ export function parseAliExpressResult(result: any, ref: ProductRef): ProductInfo
   const priceInfo = result.PRICE?.targetSkuPriceInfo
     ?? result.PRICE?.skuIdStrPriceInfoMap?.[String(result.PRICE?.selectedSkuId)]
   const price = parsePrice(priceInfo?.salePriceString)
+  // Prix avant remise : champ de la variante si présent, sinon celui des données de suivi de la page (en centimes)
+  const originalCents = parsePrice(priceInfo?.originalPrice?.formatedAmount ?? priceInfo?.originalPriceString)?.cents
+    ?? (typeof result.GLOBAL_DATA?.globalData?.eventInfo?.clcEvent?.originalPriceCent === 'number'
+      ? result.GLOBAL_DATA.globalData.eventInfo.clcEvent.originalPriceCent
+      : null)
 
   const biz = result.SHIPPING?.deliveryLayoutInfo?.[0]?.bizData ?? {}
   let shippingCents: number | null = null
@@ -128,6 +133,7 @@ export function parseAliExpressResult(result: any, ref: ProductRef): ProductInfo
     image: image ? image.replace(/^\/\//, 'https://') : null,
     currency: price?.currency ?? LOCALE.currency,
     priceCents: price?.cents ?? null,
+    listPriceCents: price && originalCents != null && originalCents > price.cents ? originalCents : null,
     shippingCents,
     shippingNote: notes.length ? notes.join(' · ') : null,
     deliveryMinDays: typeof biz.deliveryDayMin === 'number' ? biz.deliveryDayMin : null,

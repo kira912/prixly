@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nextStats, samePrice, toPricePoints } from '../server/lib/history'
+import { checkListPrice, nextStats, priceInsight, samePrice, toPricePoints } from '../server/lib/history'
 
 const snap = (day: number, priceCents: number | null, shippingCents: number | null = 0) =>
   ({ priceCents, shippingCents, capturedAt: new Date(2026, 8, day) })
@@ -81,5 +81,68 @@ describe('nextStats', () => {
 
   it('ignore un produit jamais disponible', () => {
     expect(replay([null, null])).toEqual({ lowestCents: null, highestCents: null, previousCents: null, currentCents: null })
+  })
+})
+
+describe('priceInsight', () => {
+  const point = (from: number, to: number, totalCents: number | null) =>
+    ({ at: new Date(2026, 8, from), until: new Date(2026, 8, to), priceCents: totalCents, shippingCents: 0, totalCents })
+  const now = new Date(2026, 8, 30)
+
+  it('ne dit rien avec moins de 7 jours d\'historique', () => {
+    expect(priceInsight([point(25, 30, 1000)], now)).toBeNull()
+  })
+
+  it('pondère la moyenne par la durée des paliers', () => {
+    // 20 jours à 10 €, puis 10 jours à 13 € : moyenne 11 €, actuel 18 % au-dessus
+    const insight = priceInsight([point(0, 20, 1000), point(20, 30, 1300)], now)
+    expect(insight).toEqual({ verdict: 'high', averageCents: 1100, diffPct: 18, spanDays: 30 })
+  })
+
+  it('repère le plus bas observé', () => {
+    expect(priceInsight([point(0, 20, 1000), point(20, 30, 800)], now)?.verdict).toBe('lowest')
+  })
+
+  it('juge un prix bas sans être le plus bas', () => {
+    const insight = priceInsight([point(0, 5, 800), point(5, 25, 1100), point(25, 30, 950)], now)
+    expect(insight?.verdict).toBe('good')
+  })
+
+  it('ignore les périodes d\'indisponibilité et les relevés de plus de 90 jours', () => {
+    const insight = priceInsight([
+      // 50 € en mai, remplacé par 10 € dès juin : hors de la fenêtre de 90 jours
+      { ...point(0, 0, 5000), at: new Date(2026, 4, 1) },
+      { ...point(0, 10, 1000), at: new Date(2026, 5, 1) },
+      point(10, 20, null),
+      point(20, 30, 1000),
+    ], now)
+    expect(insight).toMatchObject({ verdict: 'normal', averageCents: 1000 })
+  })
+
+  it('ne dit rien si le produit est indisponible', () => {
+    expect(priceInsight([point(0, 20, 1000), point(20, 30, null)], now)).toBeNull()
+  })
+})
+
+describe('checkListPrice', () => {
+  const now = new Date(2026, 9, 31)
+
+  it('confirme une promo dont le prix barré a été pratiqué', () => {
+    const check = checkListPrice(2000, 1500, [snap(1, 2000), snap(20, 1500)], now)
+    expect(check).toMatchObject({ status: 'observed', discountPct: 25, highestSeenCents: 2000 })
+  })
+
+  it('signale un prix barré jamais pratiqué en 30 jours', () => {
+    const check = checkListPrice(2500, 1500, [snap(1, 1600), snap(20, 1500)], now)
+    expect(check).toMatchObject({ status: 'never_seen', discountPct: 40, highestSeenCents: 1600 })
+  })
+
+  it('attend un historique suffisant avant de juger', () => {
+    expect(checkListPrice(2500, 1500, [snap(1, 1500)], new Date(2026, 8, 10))?.status).toBe('too_early')
+  })
+
+  it('ignore un prix barré absent ou inférieur au prix', () => {
+    expect(checkListPrice(null, 1500, [], now)).toBeNull()
+    expect(checkListPrice(1400, 1500, [], now)).toBeNull()
   })
 })

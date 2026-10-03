@@ -32,6 +32,8 @@ export default defineNuxtConfig({
     vapidSubject: 'mailto:prixly@example.com',
     // Lire l'IP client dans X-Forwarded-For (NUXT_TRUST_PROXY=true derrière un ingress / reverse proxy ; automatique sur Vercel)
     trustProxy: false,
+    // Code d'accès commun (NUXT_ACCESS_CODE) : vide = appli ouverte à tous (dev) ; à définir dès que l'appli est en ligne
+    accessCode: '',
   },
 
   nitro: {
