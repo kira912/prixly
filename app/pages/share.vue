@@ -10,7 +10,10 @@ const shared = computed(() => {
 })
 
 onMounted(() => {
-  if (shared.value) lookup(shared.value, { replace: true })
+  if (!shared.value) return
+  // Texte partagé sans lien (nom d'un produit, résultat Google Lens…) : on le cherche partout
+  if (!looksLikeLink(shared.value)) return navigateTo({ path: '/recherche', query: { q: shared.value } }, { replace: true })
+  lookup(shared.value, { replace: true })
 })
 </script>
 

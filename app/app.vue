@@ -6,6 +6,9 @@
       <span>Prixly</span>
     </NuxtLink>
     <nav class="topbar-actions" aria-label="Navigation principale">
+      <NuxtLink to="/recherche" class="btn btn-ghost btn-icon" aria-label="Rechercher" title="Rechercher">
+        🔍
+      </NuxtLink>
       <NuxtLink to="/suivis" class="btn btn-ghost">
         Suivis
       </NuxtLink>

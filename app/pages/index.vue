@@ -6,6 +6,12 @@ const { data } = await useFetch<{ watched: ProductWithStats[], watchedTotal: num
   default: () => ({ watched: [], watchedTotal: 0, recent: [] }),
 })
 
+// Un lien part à l'analyse ; un texte sans lien est une recherche sur toutes les plateformes
+function submit(input: string) {
+  if (looksLikeLink(input)) return lookup(input)
+  return navigateTo({ path: '/recherche', query: { q: input } })
+}
+
 const hasItems = computed(() => data.value.watched.length > 0 || data.value.recent.length > 0)
 </script>
 
@@ -15,8 +21,9 @@ const hasItems = computed(() => data.value.watched.length > 0 || data.value.rece
     <p class="lead">
       Prixly calcule ce que te coûte vraiment un produit Amazon ou AliExpress
       (prix, frais de port et délai de livraison) et te prévient quand il baisse.
+      Tu cherches un produit sans savoir où ? Tape son nom.
     </p>
-    <LinkForm :loading="loading" @submit="lookup" />
+    <LinkForm :loading="loading" @submit="submit" />
     <p v-if="error" class="alert" role="alert">
       {{ error }}
     </p>

@@ -382,3 +382,50 @@ h2 { font-size: 1.1rem; }
   font-weight: 600;
   vertical-align: middle;
 }
+
+.search-form { display: flex; gap: .5rem; }
+.search-form input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.search-form input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.recent-searches { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; margin: 0; }
+.chip {
+  padding: .2rem .7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-decoration: none;
+}
+.chip:hover { border-color: var(--accent); }
+.search-links { list-style: none; margin: .75rem 0 0; padding: 0; display: grid; gap: .5rem; }
+.search-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25rem .6rem;
+  min-height: 52px;
+  padding: .6rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-decoration: none;
+}
+.search-link:hover { border-color: var(--accent); }
+.search-link-name { font-weight: 600; }
+.search-link-arrow { margin-left: auto; color: var(--muted); }
+.supported-tag {
+  padding: 0 .5rem;
+  border-radius: 999px;
+  background: var(--good-bg);
+  color: var(--trend-down);
+  font-size: .7rem;
+  font-weight: 600;
+}

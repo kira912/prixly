@@ -20,12 +20,12 @@ function onSubmit() {
 
 <template>
   <form class="link-form" @submit.prevent="onSubmit">
-    <label for="link" class="sr-only">Lien du produit</label>
+    <label for="link" class="sr-only">Lien ou nom du produit</label>
     <textarea
       id="link"
       v-model="input"
       rows="2"
-      placeholder="Colle un lien Amazon ou AliExpress…"
+      placeholder="Colle un lien Amazon ou AliExpress, ou cherche un produit…"
       autocomplete="off"
       :disabled="loading"
       @keydown.enter.exact.prevent="onSubmit"
@@ -35,7 +35,7 @@ function onSubmit() {
         Coller
       </button>
       <button type="submit" class="btn btn-primary" :disabled="loading || !input.trim()">
-        {{ loading ? 'Analyse…' : 'Analyser' }}
+        {{ loading ? 'Analyse…' : 'Valider' }}
       </button>
     </div>
   </form>
