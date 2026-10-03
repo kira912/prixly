@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   if (!query || query.length > 200) throw createError({ statusCode: 400, message: 'Recherche vide ou trop longue.' })
 
   const credentials = ebayCredentials()
-  if (!credentials) return { configured: false, total: 0, items: [] }
+  if (!credentials) return { configured: false, assistant: false, total: 0, items: [] }
 
   await enforceRateLimit(event, 'search')
   try {
@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
       condition: condition === 'new' || condition === 'used' ? condition as EbayCondition : undefined,
       sort: sort === 'price' ? sort as EbaySort : undefined,
     })
-    return { configured: true, ...result }
+    return { configured: true, assistant: Boolean(useRuntimeConfig().anthropicApiKey), ...result }
   }
   catch (err) {
     if (err instanceof EbayError) {

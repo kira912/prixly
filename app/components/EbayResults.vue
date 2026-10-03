@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Curation } from '~~/server/lib/curate'
 import type { EbayItem } from '~~/server/lib/ebay'
 
 const props = defineProps<{ query: string }>()
@@ -11,31 +12,37 @@ const CONDITIONS = [
 const condition = ref<'' | 'new' | 'used'>('')
 const sort = ref<'relevance' | 'price'>('relevance')
 
+const params = computed(() => ({ q: props.query, condition: condition.value || undefined, sort: sort.value === 'price' ? 'price' : undefined }))
+
 // Côté client seulement : la page et ses liens s'affichent tout de suite, les annonces arrivent ensuite
-const { data, status, error } = useFetch('/api/search', {
-  query: computed(() => ({ q: props.query, condition: condition.value || undefined, sort: sort.value === 'price' ? 'price' : undefined })),
-  server: false,
-  lazy: true,
-})
+const { data, status, error } = useFetch('/api/search', { query: params, server: false, lazy: true })
 
 const items = computed<EbayItem[]>(() => data.value?.items ?? [])
 
-function total(i: EbayItem): string {
-  return formatMoney(i.priceCents + (i.shippingCents ?? 0), i.currency)
+// Tri par l'IA : à la demande (chaque tri coûte), oublié dès que la recherche ou les filtres changent
+const curation = ref<Curation | null>(null)
+const curating = ref(false)
+const curateError = ref('')
+watch(params, () => {
+  curation.value = null
+  curateError.value = ''
+})
+
+async function curate() {
+  curating.value = true
+  curateError.value = ''
+  try {
+    curation.value = await $fetch<Curation>('/api/search/curate', { query: params.value })
+  }
+  catch (err) {
+    curateError.value = errorMessage(err)
+  }
+  finally {
+    curating.value = false
+  }
 }
 
-function shippingLabel(i: EbayItem): string {
-  if (i.shippingCents == null) return 'port à vérifier'
-  if (i.shippingCents === 0) return 'port offert'
-  return `port ${formatMoney(i.shippingCents, i.currency)}`
-}
-
-function endsIn(date: string): string {
-  const hours = (new Date(date).getTime() - Date.now()) / 3_600_000
-  if (hours < 1) return 'se termine bientôt'
-  if (hours < 48) return `encore ${Math.round(hours)} h`
-  return `encore ${Math.round(hours / 24)} j`
-}
+const KIND_LABELS = { accessory: 'accessoire', for_parts: 'pour pièces', unrelated: 'autre produit' } as const
 </script>
 
 <template>
@@ -67,6 +74,22 @@ function endsIn(date: string): string {
       </label>
     </div>
 
+    <div v-if="data?.assistant && items.length" class="ai-bar">
+      <button v-if="!curation" type="button" class="btn btn-ghost" :disabled="curating" @click="curate">
+        <span v-if="curating" class="spinner spinner-sm" aria-hidden="true" />
+        {{ curating ? 'Tri en cours…' : '✨ Trier avec l\'IA' }}
+      </button>
+      <template v-else>
+        <span class="muted small">Triées par l'IA : regroupées par produit, accessoires et pièces écartés.</span>
+        <button type="button" class="btn btn-ghost" @click="curation = null">
+          Liste brute
+        </button>
+      </template>
+    </div>
+    <p v-if="curateError" class="alert" role="alert">
+      {{ curateError }}
+    </p>
+
     <p v-if="error" class="alert" role="alert">
       {{ errorMessage(error) }}
     </p>
@@ -77,24 +100,47 @@ function endsIn(date: string): string {
     <p v-else-if="!items.length" class="muted">
       Aucune annonce eBay livrable en France pour cette recherche.
     </p>
+
+    <template v-else-if="curation">
+      <p v-if="!curation.groups.length && !curation.unsorted.length" class="muted">
+        Aucune annonce ne correspond vraiment à la recherche : essaie des termes plus précis.
+      </p>
+      <div v-for="g in curation.groups" :key="g.label" class="ai-group">
+        <h3 class="ai-group-title">
+          {{ g.label }}
+          <span class="muted small">{{ g.entries.length }} annonce{{ g.entries.length > 1 ? 's' : '' }} · dès {{ formatMoney(g.fromCents, g.entries[0]!.item.currency) }}</span>
+        </h3>
+        <ul class="product-list">
+          <li v-for="e in g.entries" :key="e.item.id">
+            <EbayItemRow :item="e.item" :units="e.units" :note="e.note" />
+          </li>
+        </ul>
+      </div>
+      <div v-if="curation.unsorted.length" class="ai-group">
+        <h3 class="ai-group-title">
+          Non classées
+        </h3>
+        <ul class="product-list">
+          <li v-for="i in curation.unsorted" :key="i.id">
+            <EbayItemRow :item="i" />
+          </li>
+        </ul>
+      </div>
+      <details v-if="curation.hidden.length" class="ai-hidden">
+        <summary class="muted small">
+          {{ curation.hidden.length }} annonce{{ curation.hidden.length > 1 ? 's' : '' }} écartée{{ curation.hidden.length > 1 ? 's' : '' }}
+        </summary>
+        <ul class="product-list">
+          <li v-for="e in curation.hidden" :key="e.item.id">
+            <EbayItemRow :item="e.item" :note="[KIND_LABELS[e.kind], e.note].filter(Boolean).join(' · ')" />
+          </li>
+        </ul>
+      </details>
+    </template>
+
     <ul v-else class="product-list">
       <li v-for="i in items" :key="i.id">
-        <a :href="i.url" target="_blank" rel="noopener noreferrer" class="product-row">
-          <img v-if="i.image" :src="i.image" alt="" loading="lazy" referrerpolicy="no-referrer">
-          <div v-else class="img-placeholder" />
-          <div class="product-row-body">
-            <span class="product-row-title" :title="i.title">{{ i.title }}</span>
-            <span class="muted small">
-              <span v-if="i.condition" class="badge" :data-condition="i.isNew ? 'new' : 'used'">{{ i.condition }}</span>
-              <template v-if="i.auction"> Enchère<template v-if="i.endsAt"> · {{ endsIn(i.endsAt) }}</template></template>
-              <template v-if="i.country && i.country !== 'FR'"> · expédié de {{ i.country }}</template>
-            </span>
-          </div>
-          <div class="product-row-price">
-            <strong>{{ total(i) }}</strong>
-            <span class="muted small">{{ shippingLabel(i) }}</span>
-          </div>
-        </a>
+        <EbayItemRow :item="i" />
       </li>
     </ul>
   </section>

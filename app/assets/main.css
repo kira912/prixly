@@ -455,3 +455,14 @@ h2 { font-size: 1.1rem; }
 }
 .badge[data-condition='new'] { color: var(--trend-down); }
 .badge[data-condition='used'] { color: var(--warn); }
+
+.ai-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; margin: 0 0 .75rem; }
+.ai-bar .btn { gap: .5rem; }
+.spinner.spinner-sm { width: 16px; height: 16px; border-width: 2px; }
+.ai-group + .ai-group { margin-top: 1.25rem; }
+.ai-group-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .6rem; margin: 0 0 .5rem; font-size: 1rem; }
+.ai-group-title .small { font-weight: 400; }
+.ai-note { color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-hidden { margin-top: 1.25rem; }
+.ai-hidden summary { cursor: pointer; padding: .75rem 0; }
+.ai-hidden .product-list { opacity: .75; }

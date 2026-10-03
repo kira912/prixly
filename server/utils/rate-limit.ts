@@ -15,6 +15,8 @@ export const RATE_LIMITS = {
   compare: [{ limit: 3, windowSec: 60 }, { limit: 20, windowSec: 86_400 }],
   // Recherche eBay : API officielle, mais quota de 5 000 appels / jour pour toute l'appli
   search: [{ limit: 20, windowSec: 60 }, { limit: 300, windowSec: 86_400 }],
+  // Tri par l'IA : chaque appel coûte quelques centimes (le cache évite de refaire un tri déjà fait)
+  curate: [{ limit: 5, windowSec: 60 }, { limit: 50, windowSec: 86_400 }],
   // Code d'accès : freine les essais au hasard
   login: [{ limit: 5, windowSec: 60 }, { limit: 30, windowSec: 86_400 }],
 } satisfies Record<string, RateLimitRule[]>

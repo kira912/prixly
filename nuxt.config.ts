@@ -38,6 +38,8 @@ export default defineNuxtConfig({
     // Vides : la page de recherche n'affiche que les liens vers chaque plateforme
     ebayClientId: '',
     ebayClientSecret: '',
+    // Tri des annonces par l'IA (Claude) : clé sur console.anthropic.com, NUXT_ANTHROPIC_API_KEY. Vide : bouton masqué
+    anthropicApiKey: '',
   },
 
   nitro: {
