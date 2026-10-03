@@ -73,8 +73,10 @@ useHead(() => ({ title: query.value ? `${query.value} · Recherche · Prixly` : 
   </section>
 
   <template v-if="query">
+    <EbayResults :query="query" />
+
     <section v-for="g in groups" :key="g.kind" class="home-section">
-      <h2>{{ g.label }}</h2>
+      <h2>Chercher ailleurs · {{ g.label }}</h2>
       <ul class="search-links">
         <li v-for="l in g.links" :key="l.id">
           <a :href="l.href" target="_blank" rel="noopener noreferrer" class="search-link">

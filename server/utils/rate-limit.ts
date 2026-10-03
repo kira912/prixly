@@ -13,6 +13,8 @@ export const RATE_LIMITS = {
   pushTest: [{ limit: 3, windowSec: 60 }],
   // 5 pages Amazon par comparaison
   compare: [{ limit: 3, windowSec: 60 }, { limit: 20, windowSec: 86_400 }],
+  // Recherche eBay : API officielle, mais quota de 5 000 appels / jour pour toute l'appli
+  search: [{ limit: 20, windowSec: 60 }, { limit: 300, windowSec: 86_400 }],
   // Code d'accès : freine les essais au hasard
   login: [{ limit: 5, windowSec: 60 }, { limit: 30, windowSec: 86_400 }],
 } satisfies Record<string, RateLimitRule[]>

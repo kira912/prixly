@@ -34,6 +34,10 @@ export default defineNuxtConfig({
     trustProxy: false,
     // Code d'accès commun (NUXT_ACCESS_CODE) : vide = appli ouverte à tous (dev) ; à définir dès que l'appli est en ligne
     accessCode: '',
+    // Recherche eBay (API Browse) : clés « Production » sur developer.ebay.com, NUXT_EBAY_CLIENT_ID / NUXT_EBAY_CLIENT_SECRET
+    // Vides : la page de recherche n'affiche que les liens vers chaque plateforme
+    ebayClientId: '',
+    ebayClientSecret: '',
   },
 
   nitro: {
