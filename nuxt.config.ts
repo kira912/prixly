@@ -22,8 +22,8 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     // Surchargeables via NUXT_DB_URL / NUXT_DB_AUTH_TOKEN / NUXT_MIGRATIONS_DIR
-    // Fichier local par défaut ; en prod serverless : base Turso (libsql://…) + jeton
-    dbUrl: 'file:./data/prixly.db',
+    // Vides : repli sur TURSO_DATABASE_URL / TURSO_AUTH_TOKEN (intégration Turso de Vercel), puis fichier local (server/utils/db.ts)
+    dbUrl: '',
     dbAuthToken: '',
     migrationsDir: './server/database/migrations',
     // Web Push : générer avec `pnpm vapid`, puis NUXT_VAPID_PUBLIC_KEY / NUXT_VAPID_PRIVATE_KEY / NUXT_VAPID_SUBJECT

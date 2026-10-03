@@ -15,7 +15,7 @@ if (process.env.NODE_ENV === 'production') {
   process.exit(1)
 }
 
-const dbUrl = process.env.NUXT_DB_URL ?? 'file:./data/prixly.db'
+const dbUrl = process.env.NUXT_DB_URL || process.env.TURSO_DATABASE_URL || 'file:./data/prixly.db'
 if (!dbUrl.startsWith('file:')) {
   console.error('Refusé : script réservé à une base locale (NUXT_DB_URL=file:…).')
   process.exit(1)

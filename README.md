@@ -92,6 +92,7 @@ En serverless, pas de disque persistant ni de process permanent : la base est su
    turso db tokens create prixly     # → NUXT_DB_AUTH_TOKEN
    ```
    Reprendre les données locales (optionnel) : `turso db create prixly --from-file data/prixly.db`.
+   Ou depuis Vercel (Storage → Turso) : l'intégration crée `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN`, lues à défaut de `NUXT_DB_URL` / `NUXT_DB_AUTH_TOKEN`.
 2. **Projet Vercel** : importer le dépôt (preset Nuxt détecté, réglages dans `vercel.json`). Variables d'environnement :
    `NUXT_DB_URL`, `NUXT_DB_AUTH_TOKEN`, `NUXT_VAPID_PUBLIC_KEY`, `NUXT_VAPID_PRIVATE_KEY`, `NUXT_VAPID_SUBJECT`, `CRON_SECRET` (`openssl rand -hex 32`), et de préférence `PRIXLY_PROXY_URL`. Modèle : `.env.example`.
    Le build lance `pnpm db:migrate` avant `pnpm build` : les migrations sont appliquées à chaque déploiement, preview compris (les previews partagent la base de prod, sauf variables distinctes pour l'environnement Preview).

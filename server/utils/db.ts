@@ -12,6 +12,7 @@ let ready: Promise<Db> | undefined
 
 /**
  * Base libSQL : fichier SQLite local (`file:…`, par défaut) ou Turso (`libsql://…` + jeton).
+ * URL et jeton : NUXT_DB_URL / NUXT_DB_AUTH_TOKEN, sinon TURSO_DATABASE_URL / TURSO_AUTH_TOKEN (intégration Vercel).
  * Les migrations ne sont appliquées au démarrage que sur un fichier local ; une base distante
  * est migrée à part avec `pnpm db:migrate` (lancé par le build Vercel), pas à chaque démarrage à froid.
  */
@@ -24,7 +25,10 @@ export function useDb(): Promise<Db> {
 }
 
 async function open(): Promise<Db> {
-  const { dbUrl, dbAuthToken, migrationsDir } = useRuntimeConfig()
+  const config = useRuntimeConfig()
+  const dbUrl = config.dbUrl || process.env.TURSO_DATABASE_URL || 'file:./data/prixly.db'
+  const dbAuthToken = config.dbAuthToken || process.env.TURSO_AUTH_TOKEN
+  const { migrationsDir } = config
   const local = dbUrl.startsWith('file:')
   if (local) mkdirSync(dirname(fileURLToPath(new URL(dbUrl, `file://${process.cwd()}/`))), { recursive: true })
 
