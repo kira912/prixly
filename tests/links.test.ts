@@ -2,16 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { extractUrl, identify, resolveProductRef } from '../server/lib/links'
 
 describe('extractUrl', () => {
-  it('trouve le lien dans un texte partagé', () => {
+  it('finds the link in shared text', () => {
     expect(extractUrl('Regarde ce produit sur AliExpress ! 2,47€ | Câble https://a.aliexpress.com/_EzABCD')).toBe('https://a.aliexpress.com/_EzABCD')
   })
-  it('retire la ponctuation finale', () => {
+  it('strips trailing punctuation', () => {
     expect(extractUrl('(voir https://amzn.eu/d/abc123).')).toBe('https://amzn.eu/d/abc123')
   })
-  it('accepte un lien sans schéma', () => {
+  it('accepts a link without scheme', () => {
     expect(extractUrl('amazon.fr/dp/B06VW5BH2K')).toBe('https://amazon.fr/dp/B06VW5BH2K')
   })
-  it('renvoie null sans lien', () => {
+  it('returns null without a link', () => {
     expect(extractUrl('rien ici')).toBeNull()
   })
 })
@@ -27,7 +27,7 @@ describe('identify', () => {
     expect(identify(url)).toEqual({ platform: 'amazon', externalId: 'B06VW5BH2K', url: 'https://www.amazon.fr/dp/B06VW5BH2K' })
   })
 
-  it('conserve le domaine Amazon', () => {
+  it('keeps the Amazon domain', () => {
     expect(identify('https://www.amazon.de/dp/B06VW5BH2K')?.url).toBe('https://www.amazon.de/dp/B06VW5BH2K')
   })
 
@@ -40,7 +40,7 @@ describe('identify', () => {
     expect(identify(url)).toEqual({ platform: 'aliexpress', externalId: '1005009561948552', url: 'https://fr.aliexpress.com/item/1005009561948552.html' })
   })
 
-  it('ignore les autres sites et les pages non-produit', () => {
+  it('ignores other sites and non-product pages', () => {
     expect(identify('https://example.com/dp/B06VW5BH2K')).toBeNull()
     expect(identify('https://www.amazon.fr/s?k=pile')).toBeNull()
     expect(identify('https://evil-amazon.fr.example.com/dp/B06VW5BH2K')).toBeNull()
@@ -60,14 +60,14 @@ describe('resolveProductRef', () => {
     return { impl, calls }
   }
 
-  it('suit les redirections des liens courts', async () => {
+  it('follows short-link redirects', async () => {
     const { impl } = fakeFetch({
       'https://amzn.eu/d/abc123': { status: 301, location: 'https://www.amazon.fr/dp/B06VW5BH2K?ref=share' },
     })
     await expect(resolveProductRef('Découvrez https://amzn.eu/d/abc123', impl)).resolves.toMatchObject({ platform: 'amazon', externalId: 'B06VW5BH2K' })
   })
 
-  it('trouve le produit dans une page de redirection JavaScript', async () => {
+  it('finds the product in a JavaScript redirect page', async () => {
     const { impl } = fakeFetch({
       'https://a.aliexpress.com/_EzABCD': { status: 302, location: 'https://s.click.aliexpress.com/e/xyz' },
       'https://s.click.aliexpress.com/e/xyz': { status: 200, body: '<script>location.href="https:\\/\\/fr.aliexpress.com\\/item\\/1005009561948552.html?aff=1"</script>' },
@@ -75,13 +75,13 @@ describe('resolveProductRef', () => {
     await expect(resolveProductRef('https://a.aliexpress.com/_EzABCD', impl)).resolves.toMatchObject({ platform: 'aliexpress', externalId: '1005009561948552' })
   })
 
-  it('ne contacte pas les hôtes inconnus', async () => {
+  it('doesn\'t contact unknown hosts', async () => {
     const { impl, calls } = fakeFetch({})
     await expect(resolveProductRef('http://169.254.169.254/latest/meta-data', impl)).rejects.toMatchObject({ code: 'unsupported' })
     expect(calls).toEqual([])
   })
 
-  it('arrête de suivre une redirection vers un hôte inconnu', async () => {
+  it('stops following a redirect to an unknown host', async () => {
     const { impl, calls } = fakeFetch({
       'https://amzn.eu/d/evil': { status: 302, location: 'http://localhost:3000/admin' },
     })

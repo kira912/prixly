@@ -2,6 +2,7 @@
 import type { MarketplaceOffer, Product, Watch } from '~~/server/database/schema'
 import type { ListPriceCheck, PriceInsight, PricePoint, PriceStats } from '~~/server/lib/history'
 
+const { t } = useI18n()
 const route = useRoute()
 const { data, error, refresh: reload } = await useFetch<{ product: Product, points: PricePoint[], stats: PriceStats, insight: PriceInsight | null, listPrice: ListPriceCheck | null, watch: Watch | null, offers: MarketplaceOffer[] }>(
   () => `/api/products/${route.params.id}`,
@@ -48,15 +49,15 @@ async function saveWatch(watching: boolean, targetPriceCents: number | null = fo
 }
 
 function toggleWatch() {
-  // La demande de permission part tout de suite, dans le geste de clic, en parallèle de l'enregistrement du suivi
   if (!follow.value && push.status.value === 'available') push.enable()
   return saveWatch(!follow.value)
 }
 
-// Prix cible saisi en euros (« 3,50 »), stocké en centimes
 const targetInput = ref('')
 watch(follow, (w) => {
-  targetInput.value = w?.targetPriceCents != null ? (w.targetPriceCents / 100).toFixed(2).replace('.', ',') : ''
+  targetInput.value = w?.targetPriceCents != null
+    ? new Intl.NumberFormat(intlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }).format(w.targetPriceCents / 100)
+    : ''
 }, { immediate: true })
 const targetInvalid = ref(false)
 function saveTarget() {
@@ -66,14 +67,24 @@ function saveTarget() {
   if (!targetInvalid.value) saveWatch(true, cents)
 }
 
+const shippingDetails = computed(() => {
+  const p = product.value
+  if (!p) return ''
+  return [
+    p.shippingNote,
+    p.freeShippingOver ? t('product.freeShippingOver', { amount: p.freeShippingOver }) : null,
+    p.shipsFrom ? t('product.shipsFrom', { country: countryName(p.shipsFrom) }) : null,
+  ].filter(Boolean).join(' · ')
+})
+
 useHead(() => ({ title: product.value ? `${product.value.title} · Prixly` : 'Prixly' }))
 </script>
 
 <template>
   <section v-if="error" class="hero">
-    <h1>Produit introuvable</h1>
+    <h1>{{ t('product.notFound') }}</h1>
     <NuxtLink to="/" class="btn btn-ghost">
-      Retour
+      {{ t('common.back') }}
     </NuxtLink>
   </section>
 
@@ -88,35 +99,35 @@ useHead(() => ({ title: product.value ? `${product.value.title} · Prixly` : 'Pr
         {{ product.title }}
       </h1>
       <p v-if="product.rating" class="muted small">
-        ★ {{ product.rating.toLocaleString('fr-FR') }}
+        ★ {{ formatNumber(product.rating) }}
         <template v-if="product.reviewCount">
-          · {{ product.reviewCount.toLocaleString('fr-FR') }} avis
+          · {{ t('product.reviews', { n: formatNumber(product.reviewCount) }, product.reviewCount) }}
         </template>
       </p>
 
       <dl class="cost-table">
         <div>
-          <dt>Prix</dt>
+          <dt>{{ t('product.price') }}</dt>
           <dd>
             <s v-if="product.listPriceCents" class="muted small list-price">{{ formatMoney(product.listPriceCents, product.currency) }}</s>
-            {{ product.priceCents == null ? 'Indisponible' : formatMoney(product.priceCents, product.currency) }}
+            {{ product.priceCents == null ? t('common.unavailable') : formatMoney(product.priceCents, product.currency) }}
           </dd>
         </div>
         <div>
-          <dt>Livraison</dt>
+          <dt>{{ t('product.shipping') }}</dt>
           <dd>
-            {{ product.shippingCents === 0 ? 'Gratuite' : formatMoney(product.shippingCents, product.currency) }}
+            {{ product.shippingCents === 0 ? t('common.free') : formatMoney(product.shippingCents, product.currency) }}
           </dd>
         </div>
         <div class="cost-total">
-          <dt>Total</dt>
+          <dt>{{ t('product.total') }}</dt>
           <dd>
             {{ formatMoney(total, product.currency) }}
             <PriceDelta v-if="stats" :stats="stats" :currency="product.currency" />
           </dd>
         </div>
         <div>
-          <dt>Délai</dt>
+          <dt>{{ t('product.delay') }}</dt>
           <dd>
             {{ formatDelivery(product) }}
             <span v-if="product.deliveryText && product.deliveryMinDays != null" class="muted small">
@@ -125,8 +136,8 @@ useHead(() => ({ title: product.value ? `${product.value.title} · Prixly` : 'Pr
           </dd>
         </div>
       </dl>
-      <p v-if="product.shippingNote" class="muted small">
-        {{ product.shippingNote }}
+      <p v-if="shippingDetails" class="muted small">
+        {{ shippingDetails }}
       </p>
       <PriceVerdict
         :insight="data?.insight ?? null"
@@ -137,13 +148,13 @@ useHead(() => ({ title: product.value ? `${product.value.title} · Prixly` : 'Pr
 
       <div class="actions">
         <a :href="product.url" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
-          Voir sur {{ PLATFORM_LABELS[product.platform] }}
+          {{ t('product.viewOn', { platform: PLATFORM_LABELS[product.platform] }) }}
         </a>
         <button class="btn" :class="follow ? 'btn-tracked' : 'btn-ghost'" :aria-pressed="!!follow" :disabled="saving" @click="toggleWatch">
-          {{ follow ? '✓ Prix suivi' : 'Suivre le prix' }}
+          {{ follow ? t('product.watching') : t('product.watch') }}
         </button>
         <button class="btn btn-ghost" :disabled="refreshing" @click="refreshPrice">
-          {{ refreshing ? 'Mise à jour…' : 'Actualiser' }}
+          {{ refreshing ? t('product.refreshing') : t('product.refresh') }}
         </button>
       </div>
       <p v-if="actionError" class="alert" role="alert">
@@ -152,7 +163,7 @@ useHead(() => ({ title: product.value ? `${product.value.title} · Prixly` : 'Pr
 
       <div v-if="follow" class="watch-panel">
         <form class="target-form" @submit.prevent="saveTarget">
-          <label for="target">Me prévenir si le total passe sous</label>
+          <label for="target">{{ t('product.notifyBelow') }}</label>
           <div class="target-input">
             <input
               id="target"
@@ -164,25 +175,25 @@ useHead(() => ({ title: product.value ? `${product.value.title} · Prixly` : 'Pr
             >
             <span aria-hidden="true">€</span>
             <button class="btn btn-ghost" type="submit" :disabled="saving">
-              OK
+              {{ t('common.ok') }}
             </button>
           </div>
         </form>
         <p class="muted small">
-          Tu recevras aussi une alerte à chaque baisse d'au moins 5 % (ou 0,50 €) et à chaque nouveau prix le plus bas.
+          {{ t('product.alertInfo') }}
         </p>
         <ClientOnly>
           <PushStatus />
         </ClientOnly>
       </div>
 
-      <p v-if="follow && product.lastError" class="alert" role="status">
-        Dernier relevé automatique en échec ({{ formatRelative(product.lastCheckedAt!) }}) : {{ product.lastError }}
+      <p v-if="follow && product.lastError" class="alert" role="status" :title="product.lastError">
+        {{ t('product.lastCheckFailed', { when: formatRelative(product.lastCheckedAt!) }) }}
       </p>
       <p class="muted small">
-        Relevé {{ formatRelative(product.fetchedAt) }}
+        {{ t('product.checked', { when: formatRelative(product.fetchedAt) }) }}
         <template v-if="follow">
-          · suivi depuis le {{ new Date(follow.createdAt).toLocaleDateString('fr-FR') }}, relevé automatique toutes les 6 h
+          · {{ t('product.watchedSince', { date: formatDate(follow.createdAt, { dateStyle: 'short' }) }) }}
         </template>
       </p>
     </div>
@@ -195,20 +206,20 @@ useHead(() => ({ title: product.value ? `${product.value.title} · Prixly` : 'Pr
     />
 
     <section class="history">
-      <h2>Évolution du prix total</h2>
+      <h2>{{ t('product.history') }}</h2>
 
       <template v-if="points.length > 1 && stats">
         <dl class="stat-row">
           <div>
-            <dt>Actuel</dt>
+            <dt>{{ t('product.current') }}</dt>
             <dd>{{ formatMoney(stats.currentCents, product.currency) }}</dd>
           </div>
           <div>
-            <dt>Plus bas</dt>
+            <dt>{{ t('product.lowest') }}</dt>
             <dd>{{ formatMoney(stats.lowestCents, product.currency) }}</dd>
           </div>
           <div>
-            <dt>Plus haut</dt>
+            <dt>{{ t('product.highest') }}</dt>
             <dd>{{ formatMoney(stats.highestCents, product.currency) }}</dd>
           </div>
         </dl>
@@ -216,29 +227,29 @@ useHead(() => ({ title: product.value ? `${product.value.title} · Prixly` : 'Pr
         <PriceChart :points="points" :currency="product.currency" :end="product.lastCheckedAt ?? product.fetchedAt" />
 
         <details class="history-table">
-          <summary>Voir les {{ points.length }} changements</summary>
+          <summary>{{ t('product.seeChanges', { n: points.length }) }}</summary>
           <table>
             <thead>
               <tr>
                 <th scope="col">
-                  Depuis le
+                  {{ t('product.since') }}
                 </th>
                 <th scope="col">
-                  Prix
+                  {{ t('product.price') }}
                 </th>
                 <th scope="col">
-                  Livraison
+                  {{ t('product.shipping') }}
                 </th>
                 <th scope="col">
-                  Total
+                  {{ t('product.total') }}
                 </th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="p in [...points].reverse()" :key="String(p.at)">
-                <td>{{ new Date(p.at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) }}</td>
+                <td>{{ formatDate(p.at, { dateStyle: 'short', timeStyle: 'short' }) }}</td>
                 <td>{{ formatMoney(p.priceCents, product.currency) }}</td>
-                <td>{{ p.shippingCents === 0 ? 'Gratuite' : formatMoney(p.shippingCents, product.currency) }}</td>
+                <td>{{ p.shippingCents === 0 ? t('common.free') : formatMoney(p.shippingCents, product.currency) }}</td>
                 <td><strong>{{ formatMoney(p.totalCents, product.currency) }}</strong></td>
               </tr>
             </tbody>
@@ -246,8 +257,8 @@ useHead(() => ({ title: product.value ? `${product.value.title} · Prixly` : 'Pr
         </details>
       </template>
       <p v-else class="muted small">
-        Pas encore de variation de prix.
-        {{ follow ? 'Le prix est relevé automatiquement toutes les 6 h.' : 'Suis ce produit pour relever son prix automatiquement et être prévenu des baisses.' }}
+        {{ t('product.noVariation') }}
+        {{ follow ? t('product.autoChecked') : t('product.watchToTrack') }}
       </p>
     </section>
   </article>

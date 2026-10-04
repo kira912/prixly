@@ -2,6 +2,7 @@
 import type { ProductWithStats } from '~~/server/utils/products'
 
 defineProps<{ products: ProductWithStats[] }>()
+const { t } = useI18n()
 </script>
 
 <template>
@@ -15,7 +16,7 @@ defineProps<{ products: ProductWithStats[] }>()
           <span class="muted small">
             <span class="badge" :data-platform="p.platform">{{ PLATFORM_LABELS[p.platform] }}</span>
             {{ formatRelative(p.fetchedAt) }}
-            <template v-if="p.watched && p.lastError"> · ⚠ relevé en échec</template>
+            <template v-if="p.watched && p.lastError"> · {{ t('productList.checkFailed') }}</template>
           </span>
         </div>
         <div class="product-row-price">

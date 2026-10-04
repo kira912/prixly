@@ -1,26 +1,24 @@
 <script setup lang="ts">
 import { LIST_PRICE_MIN_DAYS, type ListPriceCheck, type PriceInsight } from '~~/server/lib/history'
 
-// Avis sur le prix actuel (comparé à l'historique) et sur le prix barré affiché par la plateforme ;
-// icône + texte, jamais la couleur seule
 const props = defineProps<{ insight: PriceInsight | null, listPrice: ListPriceCheck | null, currency: string, watched: boolean }>()
-
-const days = (n: number) => (n <= 1 ? `${n} jour` : `${n} jours`)
+const { t } = useI18n()
 
 const verdict = computed(() => {
   const i = props.insight
   if (!i) return null
   const avg = formatMoney(i.averageCents, props.currency)
-  const period = `des ${days(i.spanDays)} de suivi`
+  const period = t('verdict.period', { days: formatDays(i.spanDays) })
+  const below = t('verdict.belowAverage', { pct: Math.abs(i.diffPct), avg, period })
   switch (i.verdict) {
     case 'lowest':
-      return { icon: '★', title: 'Plus bas prix observé', text: `${Math.abs(i.diffPct)} % sous la moyenne (${avg}) ${period}.` }
+      return { icon: '★', title: t('verdict.lowestTitle'), text: below }
     case 'good':
-      return { icon: '✓', title: 'Bon moment pour acheter', text: `${Math.abs(i.diffPct)} % sous la moyenne (${avg}) ${period}.` }
+      return { icon: '✓', title: t('verdict.goodTitle'), text: below }
     case 'high':
-      return { icon: '!', title: 'Prix élevé', text: `${i.diffPct} % au-dessus de la moyenne (${avg}) ${period} : mieux vaut attendre une baisse.` }
+      return { icon: '!', title: t('verdict.highTitle'), text: t('verdict.highText', { pct: i.diffPct, avg, period }) }
     default:
-      return { icon: '=', title: 'Prix habituel', text: `Proche de la moyenne (${avg}) ${period}.` }
+      return { icon: '=', title: t('verdict.usualTitle'), text: t('verdict.usualText', { avg, period }) }
   }
 })
 
@@ -33,19 +31,17 @@ const promo = computed(() => {
       return {
         tone: 'bad',
         icon: '!',
-        title: 'Promo douteuse',
-        text: `Le prix barré (${list}) n'a jamais été pratiqué en ${days(l.spanDays)} de suivi : le prix le plus haut relevé est ${formatMoney(l.highestSeenCents, props.currency)}.`,
+        title: t('verdict.dubiousTitle'),
+        text: t('verdict.dubiousText', { list, days: formatDays(l.spanDays), highest: formatMoney(l.highestSeenCents, props.currency) }),
       }
     case 'observed':
-      return { tone: 'good', icon: '✓', title: 'Promo réelle', text: `Le produit a bien été vendu ${list} ou plus pendant le suivi.` }
+      return { tone: 'good', icon: '✓', title: t('verdict.realTitle'), text: t('verdict.realText', { list }) }
     default:
       return {
         tone: 'neutral',
         icon: '?',
-        title: 'Promo pas encore vérifiable',
-        text: props.watched
-          ? `Il faut ${LIST_PRICE_MIN_DAYS} jours de suivi pour savoir si le prix barré (${list}) a vraiment été pratiqué.`
-          : `Suis le prix pendant ${LIST_PRICE_MIN_DAYS} jours pour savoir si le prix barré (${list}) a vraiment été pratiqué.`,
+        title: t('verdict.pendingTitle'),
+        text: t(props.watched ? 'verdict.pendingWatched' : 'verdict.pendingNotWatched', { n: LIST_PRICE_MIN_DAYS, list }),
       }
   }
 })

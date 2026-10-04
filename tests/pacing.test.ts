@@ -6,11 +6,11 @@ const HOUR = 60 * 60 * 1000
 describe('nextBackoff', () => {
   const rule = { baseMs: HOUR, maxMs: 3 * HOUR }
 
-  it('commence par l’attente de base', () => {
+  it('starts with the base wait', () => {
     expect(nextBackoff(null, rule, 0)).toEqual({ strikes: 1, until: HOUR })
   })
 
-  it('double l’attente à chaque blocage consécutif, plafonnée', () => {
+  it('doubles the wait on each consecutive block, capped', () => {
     let state = nextBackoff(null, rule, 0)
     state = nextBackoff(state, rule, 0)
     expect(state.until).toBe(2 * HOUR)
@@ -21,7 +21,7 @@ describe('nextBackoff', () => {
 })
 
 describe('interleaveByPlatform', () => {
-  it('alterne les plateformes en gardant l’ordre de chacune', () => {
+  it('alternates platforms while keeping each one\'s order', () => {
     const items = [
       { platform: 'amazon' as const, id: 1 },
       { platform: 'amazon' as const, id: 2 },
@@ -31,7 +31,7 @@ describe('interleaveByPlatform', () => {
     expect(interleaveByPlatform(items).map(i => i.id)).toEqual([1, 4, 2, 3])
   })
 
-  it('gère une liste vide', () => {
+  it('handles an empty list', () => {
     expect(interleaveByPlatform([])).toEqual([])
   })
 })

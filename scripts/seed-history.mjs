@@ -1,23 +1,15 @@
-// Dev uniquement : invente un historique de prix pour les produits existants, afin de voir
-// le graphique, les variations et le tableau des changements. Le prix actuel réel n'est pas modifié :
-// les paliers inventés sont placés AVANT le premier relevé réel de chaque produit.
-//
-//   pnpm seed:history            ajoute un historique aux produits qui n'en ont pas (≤ 1 palier)
-//   pnpm seed:history --force    en ajoute aussi aux autres
-//
-// Une sauvegarde de la base est faite avant toute écriture (data/prixly.before-seed-<date>.db).
 import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import Database from 'better-sqlite3'
 
 if (process.env.NODE_ENV === 'production') {
-  console.error('Refusé : script réservé au développement.')
+  console.error('Refused: this script is for development only.')
   process.exit(1)
 }
 
 const dbUrl = process.env.NUXT_DB_URL || process.env.TURSO_DATABASE_URL || 'file:./data/prixly.db'
 if (!dbUrl.startsWith('file:')) {
-  console.error('Refusé : script réservé à une base locale (NUXT_DB_URL=file:…).')
+  console.error('Refused: this script only runs on a local database (NUXT_DB_URL=file:…).')
   process.exit(1)
 }
 const dbPath = resolve(dbUrl.slice('file:'.length))
@@ -28,30 +20,26 @@ db.pragma('foreign_keys = ON')
 const backup = resolve(dirname(dbPath), `prixly.before-seed-${new Date().toISOString().replace(/[:.]/g, '-')}.db`)
 mkdirSync(dirname(backup), { recursive: true })
 await db.backup(backup)
-console.log(`Sauvegarde : ${backup}`)
+console.log(`Backup: ${backup}`)
 
 const DAY = 86_400_000
-const STEP = 6 * 3_600_000 // un relevé toutes les 6 h
+const STEP = 6 * 3_600_000
 
-/**
- * Scénarios exprimés relativement au prix actuel : [facteur prix, port ('same' | 'free' | cents), durée en jours].
- * facteur null = produit indisponible pendant la période.
- */
 const SCENARIOS = [
   {
-    name: 'baisse progressive avec une promo éclair',
+    name: 'gradual drop with a flash sale',
     steps: [[1.25, 'same', 12], [1.15, 'same', 9], [1.1, 'same', 6], [1.2, 'same', 5], [0.92, 'same', 2], [1.08, 'same', 7]],
   },
   {
-    name: 'port offert puis rupture de stock',
+    name: 'free shipping then out of stock',
     steps: [[1.3, 'same', 8], [1.18, 'same', 10], [1.22, 'free', 6], [null, null, 2], [1.05, 'same', 9], [1.12, 'same', 4]],
   },
   {
-    name: 'hausse régulière (prix plus bas au début)',
+    name: 'steady rise (lowest price at the start)',
     steps: [[0.8, 'same', 10], [0.85, 'same', 8], [0.88, 'same', 7], [0.93, 'same', 9], [0.97, 'same', 6]],
   },
   {
-    name: 'prix en dents de scie',
+    name: 'zigzag price',
     steps: [[1.1, 'same', 5], [0.95, 'same', 4], [1.12, 'same', 5], [0.9, 'same', 3], [1.05, 'same', 6], [0.98, 'same', 4], [1.06, 'same', 5]],
   },
 ]
@@ -64,19 +52,19 @@ const insert = db.prepare(`insert into price_snapshots (product_id, price_cents,
 const allSnapshots = db.prepare('select price_cents, shipping_cents from price_snapshots where product_id = ? order by captured_at')
 const updateStats = db.prepare('update products set lowest_cents = ?, highest_cents = ?, previous_cents = ? where id = ?')
 
-const round9 = cents => Math.max(9, Math.round(cents / 10) * 10 - 1) // prix « en ,x9 » crédibles
+const round9 = cents => Math.max(9, Math.round(cents / 10) * 10 - 1)
 const total = s => (s.price_cents == null ? null : s.price_cents + (s.shipping_cents ?? 0))
 
 let seeded = 0
 db.transaction(() => {
   products.forEach((p, i) => {
     if (!force && countSnapshots.get(p.id).n > 1) {
-      console.log(`#${p.id} ignoré (a déjà un historique ; --force pour forcer)`)
+      console.log(`#${p.id} skipped (already has history; use --force to override)`)
       return
     }
     const first = firstSnapshot.get(p.id)
     if (!first || p.price_cents == null) {
-      console.log(`#${p.id} ignoré (pas de prix actuel)`)
+      console.log(`#${p.id} skipped (no current price)`)
       return
     }
 
@@ -91,7 +79,6 @@ db.transaction(() => {
       t += duration * DAY
     }
 
-    // Statistiques recalculées sur tout l'historique (mêmes règles que la migration 0003)
     const totals = allSnapshots.all(p.id).map(total)
     const known = totals.filter(v => v != null)
     const current = total(p)
@@ -99,8 +86,8 @@ db.transaction(() => {
     updateStats.run(Math.min(...known), Math.max(...known), previous, p.id)
 
     seeded++
-    console.log(`#${p.id} ${p.title.slice(0, 45)}… → ${scenario.steps.length} paliers sur ${days} j (${scenario.name})`)
+    console.log(`#${p.id} ${p.title.slice(0, 45)}… → ${scenario.steps.length} steps over ${days} days (${scenario.name})`)
   })
 })()
 
-console.log(`${seeded} produit(s) enrichi(s).`)
+console.log(`${seeded} product(s) seeded.`)

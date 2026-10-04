@@ -1,17 +1,17 @@
 type PushStatus =
   | 'loading'
-  | 'unsupported' // pas de Push API (iOS hors écran d'accueil, vieux navigateur)
-  | 'server-disabled' // clés VAPID absentes côté serveur
-  | 'denied' // permission refusée : seul l'utilisateur peut la rétablir dans les réglages
-  | 'available' // possible, pas encore activé
+  | 'unsupported'
+  | 'server-disabled'
+  | 'denied'
+  | 'available'
   | 'subscribed'
 
-// État partagé entre les pages (côté client uniquement)
 const status = ref<PushStatus>('loading')
 const busy = ref(false)
 const error = ref<string | null>(null)
 let publicKey: string | null = null
 let initialized: Promise<void> | null = null
+let translate: (key: string) => string = key => key
 
 function base64UrlToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padded = (base64 + '='.repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/')
@@ -23,7 +23,7 @@ function base64UrlToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
 
 async function registration(): Promise<ServiceWorkerRegistration> {
   const timeout = new Promise<never>((_, reject) => setTimeout(
-    () => reject(new Error('Service worker indisponible (il n’est actif que sur le build de production).')),
+    () => reject(new Error(translate('push.swUnavailable'))),
     8000,
   ))
   return Promise.race([navigator.serviceWorker.ready, timeout])
@@ -49,7 +49,6 @@ async function init() {
       ? await (await registration()).pushManager.getSubscription()
       : null
     if (existing) {
-      // Ré-enregistre l'abonnement : le serveur a pu le purger, ou le cookie a changé
       await $fetch('/api/push/subscription', { method: 'POST', body: existing.toJSON() })
       status.value = 'subscribed'
     }
@@ -64,12 +63,10 @@ async function init() {
 }
 
 export function usePush() {
+  const { $i18n } = useNuxtApp()
+  translate = key => $i18n.t(key)
   if (import.meta.client && !initialized) initialized = init()
 
-  /**
-   * Demande la permission puis abonne l'appareil.
-   * À appeler directement dans un gestionnaire de clic : certains navigateurs exigent un geste utilisateur.
-   */
   async function enable(): Promise<boolean> {
     busy.value = true
     error.value = null
@@ -80,7 +77,7 @@ export function usePush() {
         return false
       }
       await initialized
-      if (!publicKey) throw new Error('Notifications non configurées sur le serveur.')
+      if (!publicKey) throw new Error(translate('push.notConfigured'))
 
       const reg = await registration()
       const sub = await reg.pushManager.getSubscription()

@@ -3,11 +3,6 @@ import { browserFetch } from '../http'
 import { parseCount, parsePrice, parseRating } from '../parse'
 import { ExtractError, type ProductInfo, type ProductRef } from '../types'
 
-/**
- * AliExpress charge prix et livraison côté client via l'API interne « mtop ».
- * On l'appelle directement : il faut d'abord obtenir un jeton (_m_h5_tk) posé en cookie,
- * puis signer chaque requête avec md5(token&t&appKey&data).
- */
 const MTOP_API = 'mtop.aliexpress.pdp.pc.query'
 const MTOP_APP_KEY = '12574478'
 const LOCALE = { lang: 'fr_FR', currency: 'EUR', country: 'FR', site: 'fra' }
@@ -45,7 +40,7 @@ async function mtopCall(productId: string, fetchImpl: typeof fetch): Promise<{ r
     })
   }
   catch (err) {
-    throw new ExtractError('network', `Requête impossible vers AliExpress (${(err as Error).message})`)
+    throw new ExtractError('network', `Request to AliExpress failed (${(err as Error).message})`, { platform: 'AliExpress' })
   }
 
   const set = res.headers.getSetCookie?.() ?? []
@@ -59,48 +54,36 @@ async function mtopCall(productId: string, fetchImpl: typeof fetch): Promise<{ r
   }
 
   const json = await res.json().catch(() => null) as { ret?: string[], data?: any } | null
-  if (!json) throw new ExtractError('parse', 'Réponse AliExpress illisible.')
+  if (!json) throw new ExtractError('parse', 'Unreadable AliExpress response.', { platform: 'AliExpress' })
   return { ret: json.ret ?? [], data: json.data }
-}
-
-function countryName(code: unknown): string | undefined {
-  if (typeof code !== 'string' || !/^[A-Z]{2}$/.test(code)) return undefined
-  try {
-    return new Intl.DisplayNames(['fr'], { type: 'region' }).of(code)
-  }
-  catch {
-    return undefined
-  }
 }
 
 export async function extractAliExpress(ref: ProductRef, fetchImpl: typeof fetch = browserFetch): Promise<ProductInfo> {
   let resp = await mtopCall(ref.externalId, fetchImpl)
-  // Premier appel ou jeton expiré : la réponse pose un nouveau cookie, on rejoue une fois
   if (resp.ret.some(r => /TOKEN_EMPTY|TOKEN_EXOIRED|TOKEN_EXPIRED|ILLEGAL_SIGN/.test(r))) {
     resp = await mtopCall(ref.externalId, fetchImpl)
   }
 
   const ret = resp.ret.join(' ')
   if (/USER_VALIDATE|RGV587|punish/i.test(ret)) {
-    throw new ExtractError('blocked', 'AliExpress demande une vérification anti-robot : réessaie plus tard.')
+    throw new ExtractError('blocked', 'AliExpress is asking for a bot check.', { platform: 'AliExpress' })
   }
   if (!resp.ret.some(r => r.startsWith('SUCCESS'))) {
-    throw new ExtractError('network', `AliExpress a refusé la requête (${ret || 'réponse vide'}).`)
+    throw new ExtractError('network', `AliExpress rejected the request (${ret || 'empty response'}).`, { platform: 'AliExpress' })
   }
 
   return parseAliExpressResult(resp.data?.result, ref)
 }
 
 export function parseAliExpressResult(result: any, ref: ProductRef): ProductInfo {
-  if (!result || typeof result !== 'object') throw new ExtractError('not_found', 'Produit introuvable sur AliExpress.')
+  if (!result || typeof result !== 'object') throw new ExtractError('not_found', 'Product not found on AliExpress.', { platform: 'AliExpress' })
 
   const title: string = result.PRODUCT_TITLE?.text ?? result.GLOBAL_DATA?.globalData?.subject ?? ''
-  if (!title) throw new ExtractError('not_found', 'Produit introuvable sur AliExpress (retiré ou indisponible).')
+  if (!title) throw new ExtractError('not_found', 'Product not found on AliExpress (removed or unavailable).', { platform: 'AliExpress' })
 
   const priceInfo = result.PRICE?.targetSkuPriceInfo
     ?? result.PRICE?.skuIdStrPriceInfoMap?.[String(result.PRICE?.selectedSkuId)]
   const price = parsePrice(priceInfo?.salePriceString)
-  // Prix avant remise : champ de la variante si présent, sinon celui des données de suivi de la page (en centimes)
   const originalCents = parsePrice(priceInfo?.originalPrice?.formatedAmount ?? priceInfo?.originalPriceString)?.cents
     ?? (typeof result.GLOBAL_DATA?.globalData?.eventInfo?.clcEvent?.originalPriceCent === 'number'
       ? result.GLOBAL_DATA.globalData.eventInfo.clcEvent.originalPriceCent
@@ -112,13 +95,12 @@ export function parseAliExpressResult(result: any, ref: ProductRef): ProductInfo
   else if (typeof biz.displayAmount === 'number') shippingCents = Math.round(biz.displayAmount * 100)
   else shippingCents = parsePrice(biz.formattedAmount)?.cents ?? null
 
-  const notes: string[] = []
-  if (biz.company) notes.push(biz.company)
-  if (biz.logisticsComposeThreshold && biz.choiceFreeShipping === 'yes' && shippingCents) {
-    notes.push(`gratuite dès ${biz.logisticsComposeThreshold} d'achat`)
-  }
-  const shipFrom = countryName(biz.shipFromCode) ?? biz.shipFrom
-  if (shipFrom) notes.push(`expédié depuis ${shipFrom}`)
+  const freeShippingOver = biz.logisticsComposeThreshold && biz.choiceFreeShipping === 'yes' && shippingCents
+    ? String(biz.logisticsComposeThreshold)
+    : null
+  const shipsFrom = typeof biz.shipFromCode === 'string' && /^[A-Z]{2}$/.test(biz.shipFromCode)
+    ? biz.shipFromCode
+    : (biz.shipFrom ?? null)
 
   const deliveryText = biz.displayEtaMinDate && biz.displayEtaMaxDate
     ? `${biz.displayEtaMinDate} – ${biz.displayEtaMaxDate}`
@@ -135,7 +117,9 @@ export function parseAliExpressResult(result: any, ref: ProductRef): ProductInfo
     priceCents: price?.cents ?? null,
     listPriceCents: price && originalCents != null && originalCents > price.cents ? originalCents : null,
     shippingCents,
-    shippingNote: notes.length ? notes.join(' · ') : null,
+    shippingNote: biz.company ?? null,
+    freeShippingOver,
+    shipsFrom,
     deliveryMinDays: typeof biz.deliveryDayMin === 'number' ? biz.deliveryDayMin : null,
     deliveryMaxDays: typeof biz.deliveryDayMax === 'number' ? biz.deliveryDayMax : null,
     deliveryText,

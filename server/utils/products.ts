@@ -1,3 +1,4 @@
+import type { H3Event } from 'h3'
 import { and, asc, desc, eq, exists, isNull, lt, notExists, or, sql } from 'drizzle-orm'
 import { priceSnapshots, products, productViews, watches, type Product } from '../database/schema'
 import { interleaveByPlatform, nextBackoff, type BackoffState } from '../lib/pacing'
@@ -6,10 +7,8 @@ import { checkListPrice, nextStats, priceInsight, samePrice, snapshotTotal, stat
 import { resolveProductRef } from '../lib/links'
 import { ExtractError, type Platform, type ProductInfo, type ProductRef } from '../lib/types'
 
-/** Durée pendant laquelle on sert la version en base sans refrapper la plateforme. */
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000
 
-/** Plateformes en retrait après un captcha, en base (table kv) pour être communes à toutes les instances. */
 const backoffKey = (platform: Platform) => `backoff:${platform}`
 
 async function backoffRemainingMs(platform: Platform): Promise<number> {
@@ -17,7 +16,6 @@ async function backoffRemainingMs(platform: Platform): Promise<number> {
   return Math.max(0, (state?.until ?? 0) - Date.now())
 }
 
-/** Relève un produit en tenant le compte des blocages, quel que soit le déclencheur. */
 export async function extractTracked(ref: ProductRef): Promise<ProductInfo> {
   try {
     const info = await extractProduct(ref)
@@ -27,9 +25,8 @@ export async function extractTracked(ref: ProductRef): Promise<ProductInfo> {
   catch (err) {
     if (err instanceof ExtractError && err.code === 'blocked') {
       const { strikes, until } = nextBackoff(await kvGet<BackoffState>(backoffKey(ref.platform)))
-      // Les blocages restent comptés une semaine : au-delà, on repart de l'attente de base
       await kvSet(backoffKey(ref.platform), { strikes, until }, { ttlSec: 7 * 24 * 3600 })
-      console.warn(`[backoff] ${ref.platform} bloqué (${strikes}e fois d'affilée), relevés planifiés suspendus jusqu'à ${new Date(until).toISOString()}`)
+      console.warn(`[backoff] ${ref.platform} blocked (${strikes} times in a row), scheduled checks paused until ${new Date(until).toISOString()}`)
     }
     throw err
   }
@@ -40,9 +37,9 @@ export async function lookupProduct(input: string, { refresh = false } = {}): Pr
   return fetchAndStore(ref, { refresh })
 }
 
-export async function refreshProduct(id: number): Promise<Product> {
+export async function refreshProduct(id: number): Promise<Product | null> {
   const existing = await getProduct(id)
-  if (!existing) throw createError({ statusCode: 404, message: 'Produit inconnu.' })
+  if (!existing) return null
   const { product } = await fetchAndStore(toRef(existing), { refresh: true })
   return product
 }
@@ -71,11 +68,6 @@ interface Reading {
   notified: number
 }
 
-/**
- * Enregistre un relevé puis prévient les abonnés qui suivent le produit.
- * Tout relevé passe par ici (partage, bouton « Actualiser », tâche planifiée) :
- * une baisse n'est jamais manquée, quel que soit le déclencheur.
- */
 async function recordReading(info: ProductInfo): Promise<Reading> {
   const db = await useDb()
   const now = new Date()
@@ -93,7 +85,6 @@ async function recordReading(info: ProductInfo): Promise<Reading> {
       .returning()
       .get()
 
-    // Même prix et même port que le dernier palier : on le prolonge au lieu d'ajouter une ligne
     const last = await tx.select().from(priceSnapshots)
       .where(eq(priceSnapshots.productId, product.id))
       .orderBy(desc(priceSnapshots.capturedAt))
@@ -121,8 +112,7 @@ async function recordReading(info: ProductInfo): Promise<Reading> {
     notified = await notifyWatchers(product, previousCents, lowestBeforeCents)
   }
   catch (err) {
-    // Une panne d'envoi ne doit pas faire échouer le relevé lui-même
-    console.warn(`[push] alertes non envoyées pour #${product.id} : ${(err as Error).message}`)
+    console.warn(`[push] alerts not sent for #${product.id}: ${(err as Error).message}`)
   }
   return { product, previousCents, notified }
 }
@@ -135,7 +125,6 @@ export type ProductWithStats = Product & { stats: PriceStats, watched: boolean }
 
 const withStats = (p: Product, watched: boolean): ProductWithStats => ({ ...p, stats: statsOf(p), watched })
 
-/** Produits suivis par l'abonné, du plus récemment suivi au plus ancien. Une lecture par produit. */
 export async function listWatched(subscriberId: number | null, limit?: number): Promise<{ items: ProductWithStats[], total: number }> {
   if (subscriberId == null) return { items: [], total: 0 }
   const db = await useDb()
@@ -150,7 +139,6 @@ export async function listWatched(subscriberId: number | null, limit?: number): 
   return { items: rows.map(r => withStats(r.product, true)), total }
 }
 
-/** Derniers produits consultés par l'abonné, hors produits suivis (déjà listés à part). */
 export async function listRecent(subscriberId: number | null, limit = 5): Promise<ProductWithStats[]> {
   if (subscriberId == null) return []
   const db = await useDb()
@@ -173,7 +161,6 @@ export async function recordView(subscriberId: number, productId: number) {
     .run()
 }
 
-/** Historique d'un produit : quelques dizaines de paliers, pas un relevé par passage. */
 export async function getPriceHistory(product: Product) {
   const snapshots = await (await useDb()).select().from(priceSnapshots)
     .where(eq(priceSnapshots.productId, product.id))
@@ -194,36 +181,20 @@ export interface RefreshReport {
   notified: number
   failed: Array<{ id: number, error: string }>
   skippedPlatforms: Platform[]
-  /** Produits dus laissés au passage suivant faute de temps (budgetMs) */
   pending: number
-  /** Un autre relevé tournait déjà : rien n'a été fait */
   busy?: boolean
 }
 
 export interface RefreshOptions {
-  /** Âge minimal du dernier relevé pour qu'un produit soit relevé */
   minAgeMs?: number
-  /** Pause aléatoire entre deux requêtes [min, max] */
   pauseMs?: [number, number]
-  /**
-   * Durée maximale du passage (fonction serverless) : on n'entame plus de produit s'il risque de la dépasser,
-   * le reste est repris au passage suivant (les plus anciens relevés passent en premier).
-   */
   budgetMs?: number
 }
 
-/** Pire durée d'un relevé (timeout HTTP de 15 s, redirections, écriture) : marge avant d'entamer un produit. */
 const WORST_FETCH_MS = 20_000
 
 const REFRESH_LOCK = 'lock:prices-refresh'
 
-/**
- * Relève le prix des produits suivis par au moins un abonné, dont le dernier relevé date de plus de minAgeMs.
- * Séquentiel avec une pause aléatoire entre deux requêtes, en alternant les plateformes pour espacer
- * les requêtes vers chacune. Si une plateforme renvoie un captcha, ses produits restants sont reportés
- * et elle est mise en retrait (voir backoffRemainingMs) plutôt que d'insister.
- * Un verrou en base empêche deux passages simultanés, même sur deux instances.
- */
 export async function refreshWatchedProducts({ minAgeMs = 60 * 60 * 1000, pauseMs = [3000, 8000], budgetMs }: RefreshOptions = {}): Promise<RefreshReport> {
   const startedAt = Date.now()
   const report: RefreshReport = { checked: 0, changed: [], notified: 0, failed: [], skippedPlatforms: [], pending: 0 }
@@ -292,10 +263,9 @@ const STATUS_BY_CODE: Record<ExtractError['code'], number> = {
   network: 502,
 }
 
-/** Convertit une erreur d'extraction en erreur HTTP lisible côté client. */
-export function toHttpError(err: unknown) {
+export function toHttpError(event: H3Event, err: unknown) {
   if (err instanceof ExtractError) {
-    return createError({ statusCode: STATUS_BY_CODE[err.code], message: err.message, data: { code: err.code, message: err.message } })
+    return localizedError(event, STATUS_BY_CODE[err.code], `errors.extract.${err.key}`, { platform: err.details.platform ?? '' })
   }
   return err
 }

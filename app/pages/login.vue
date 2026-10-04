@@ -1,11 +1,10 @@
 <script setup lang="ts">
-// Page de connexion par code d'accès (NUXT_ACCESS_CODE) ; le middleware serveur y renvoie toute visite sans cookie
+const { t } = useI18n()
 const route = useRoute()
 const code = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-// Retour vers la page demandée (ex. /share?url=… après un partage), jamais vers un autre site
 const next = computed(() => {
   const n = route.query.next
   return typeof n === 'string' && n.startsWith('/') && !n.startsWith('//') && !n.startsWith('/\\') ? n : '/'
@@ -26,17 +25,17 @@ async function submit() {
   }
 }
 
-useHead({ title: 'Connexion · Prixly' })
+useHead(() => ({ title: `${t('login.pageTitle')} · Prixly` }))
 </script>
 
 <template>
   <section class="hero login">
-    <h1>Accès privé</h1>
+    <h1>{{ t('login.title') }}</h1>
     <p class="muted">
-      Saisis le code d'accès pour utiliser Prixly sur cet appareil.
+      {{ t('login.text') }}
     </p>
     <form class="login-form" @submit.prevent="submit">
-      <label for="code">Code d'accès</label>
+      <label for="code">{{ t('login.label') }}</label>
       <input
         id="code"
         v-model="code"
@@ -47,7 +46,7 @@ useHead({ title: 'Connexion · Prixly' })
         :disabled="loading"
       >
       <button type="submit" class="btn btn-primary" :disabled="loading || !code.trim()">
-        {{ loading ? 'Vérification…' : 'Entrer' }}
+        {{ loading ? t('login.checking') : t('login.submit') }}
       </button>
     </form>
     <p v-if="error" class="alert" role="alert">

@@ -15,18 +15,18 @@ describe('parsePrice', () => {
     expect(parsePrice(input)).toEqual({ cents, currency })
   })
 
-  it('renvoie null sans nombre', () => {
+  it('returns null without a number', () => {
     expect(parsePrice('GRATUITE')).toBeNull()
     expect(parsePrice('')).toBeNull()
   })
 })
 
 describe('parseCount / parseRating', () => {
-  it('lit les nombres avec séparateurs', () => {
+  it('reads numbers with separators', () => {
     expect(parseCount('(141 570)')).toBe(141570)
     expect(parseCount('141 570 évaluations')).toBe(141570)
   })
-  it('lit une note sur 5', () => {
+  it('reads a rating out of 5', () => {
     expect(parseRating('4,7 sur 5 étoiles')).toBe(4.7)
     expect(parseRating('4.5')).toBe(4.5)
     expect(parseRating('12')).toBeNull()
@@ -34,7 +34,7 @@ describe('parseCount / parseRating', () => {
 })
 
 describe('parseFrenchDeliveryDays', () => {
-  const now = new Date(2026, 8, 29) // mardi 29 septembre 2026
+  const now = new Date(2026, 8, 29)
 
   it.each([
     ['vendredi 2 octobre', 3, 3],
@@ -46,11 +46,11 @@ describe('parseFrenchDeliveryDays', () => {
     expect(parseFrenchDeliveryDays(text, now)).toEqual({ min, max })
   })
 
-  it('passe à l’année suivante pour janvier vu depuis décembre', () => {
+  it('rolls over to next year for January seen from December', () => {
     expect(parseFrenchDeliveryDays('lundi 4 janvier', new Date(2026, 11, 30))).toEqual({ min: 5, max: 5 })
   })
 
-  it('renvoie null si illisible', () => {
+  it('returns null when unreadable', () => {
     expect(parseFrenchDeliveryDays('bientôt', now)).toBeNull()
   })
 })

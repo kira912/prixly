@@ -4,7 +4,6 @@ import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
 
 declare const self: ServiceWorkerGlobalScope
 
-// registerType « autoUpdate » : la nouvelle version remplace l'ancienne sans attendre
 self.skipWaiting()
 clientsClaim()
 cleanupOutdatedCaches()
@@ -31,7 +30,6 @@ self.addEventListener('push', (event) => {
     body: data.body,
     icon: '/icon-192.png',
     badge: '/icon-192.png',
-    // Grande image sous le texte (Android / Chrome) ; ignorée ailleurs
     ...(data.image ? { image: data.image } : {}),
     tag: data.tag,
     renotify: Boolean(data.tag),
@@ -39,7 +37,6 @@ self.addEventListener('push', (event) => {
   } as NotificationOptions))
 })
 
-// Tap sur la notification : on réutilise un onglet de l'appli s'il existe, sinon on en ouvre un
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   const url = new URL((event.notification.data as { url?: string } | null)?.url ?? '/', self.location.origin).href

@@ -1,8 +1,4 @@
-# Relevé des prix suivis en production (Vercel Hobby : le cron Vercel ne tourne qu'une fois par jour).
-# Chaque appel relève un lot de produits dus dans la limite de temps d'une fonction ; les suivants attendent l'appel d'après.
-# À configurer dans le dépôt GitHub : secret CRON_SECRET (même valeur que sur Vercel), variable PRIXLY_URL (https://….vercel.app).
-# Les horaires GitHub sont approximatifs (retards de plusieurs minutes) : ça sert aussi de jitter.
-name: Relevé des prix
+name: Price refresh
 
 on:
   schedule:
@@ -14,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Appeler /api/cron/refresh
+      - name: Call /api/cron/refresh
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           PRIXLY_URL: ${{ vars.PRIXLY_URL }}

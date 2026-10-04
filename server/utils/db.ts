@@ -10,12 +10,6 @@ export type Db = LibSQLDatabase<typeof schema>
 
 let ready: Promise<Db> | undefined
 
-/**
- * Base libSQL : fichier SQLite local (`file:…`, par défaut) ou Turso (`libsql://…` + jeton).
- * URL et jeton : NUXT_DB_URL / NUXT_DB_AUTH_TOKEN, sinon TURSO_DATABASE_URL / TURSO_AUTH_TOKEN (intégration Vercel).
- * Les migrations ne sont appliquées au démarrage que sur un fichier local ; une base distante
- * est migrée à part avec `pnpm db:migrate` (lancé par le build Vercel), pas à chaque démarrage à froid.
- */
 export function useDb(): Promise<Db> {
   ready ??= open().catch((err) => {
     ready = undefined

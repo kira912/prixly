@@ -2,9 +2,7 @@ export type Platform = 'amazon' | 'aliexpress'
 
 export interface ProductRef {
   platform: Platform
-  /** ASIN pour Amazon, product id pour AliExpress */
   externalId: string
-  /** URL canonique, sans paramètres de tracking */
   url: string
 }
 
@@ -12,16 +10,14 @@ export interface ProductInfo extends ProductRef {
   title: string
   image: string | null
   currency: string
-  /** Montants en centimes ; null si non trouvé */
   priceCents: number | null
   shippingCents: number | null
-  /** Prix barré affiché par la plateforme (prix de l'article, hors port), seulement s'il dépasse le prix ; sinon null */
   listPriceCents: number | null
-  /** Ex. « Livraison gratuite dès 10,00€ d'achat » */
   shippingNote: string | null
+  freeShippingOver: string | null
+  shipsFrom: string | null
   deliveryMinDays: number | null
   deliveryMaxDays: number | null
-  /** Texte brut affiché par la plateforme, ex. « vendredi 2 octobre » */
   deliveryText: string | null
   rating: number | null
   reviewCount: number | null
@@ -29,9 +25,19 @@ export interface ProductInfo extends ProductRef {
 
 export type ExtractErrorCode = 'unsupported' | 'not_found' | 'blocked' | 'parse' | 'network'
 
+export type ExtractErrorKey = ExtractErrorCode | 'no_link' | 'follow_failed'
+
 export class ExtractError extends Error {
-  constructor(public code: ExtractErrorCode, message: string) {
+  constructor(
+    public code: ExtractErrorCode,
+    message: string,
+    public details: { key?: ExtractErrorKey, platform?: string } = {},
+  ) {
     super(message)
     this.name = 'ExtractError'
+  }
+
+  get key(): ExtractErrorKey {
+    return this.details.key ?? this.code
   }
 }

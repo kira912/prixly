@@ -1,6 +1,5 @@
 import type { Product } from '~~/server/database/schema'
 
-/** Envoie un lien au serveur puis ouvre la fiche produit. */
 export function useLookup() {
   const loading = ref(false)
   const error = ref<string | null>(null)

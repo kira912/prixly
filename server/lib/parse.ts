@@ -10,10 +10,6 @@ export function currencyFromSymbol(symbol: string | undefined, fallback = 'EUR')
   return CURRENCY_SYMBOLS[symbol.trim()] ?? (/^[A-Z]{3}$/.test(symbol.trim()) ? symbol.trim() : fallback)
 }
 
-/**
- * Parse un prix affiché : « 11,99 € », « €1,234.56 », « 1 234,56€ », « 2,47€ ».
- * Renvoie un montant en centimes.
- */
 export function parsePrice(text: string | null | undefined): { cents: number, currency: string } | null {
   if (!text) return null
   const clean = text.replace(/[  ]/g, ' ').trim()
@@ -22,7 +18,6 @@ export function parsePrice(text: string | null | undefined): { cents: number, cu
 
   let digits = num[0].replace(/[ ']/g, '').replace(/[.,]$/, '')
   const lastSep = Math.max(digits.lastIndexOf(','), digits.lastIndexOf('.'))
-  // Un séparateur suivi d'exactement 1 ou 2 chiffres est décimal ; sinon c'est un séparateur de milliers
   if (lastSep !== -1 && digits.length - lastSep - 1 <= 2) {
     const int = digits.slice(0, lastSep).replace(/[.,]/g, '')
     const dec = digits.slice(lastSep + 1).padEnd(2, '0')
@@ -39,7 +34,6 @@ export function parsePrice(text: string | null | undefined): { cents: number, cu
   return { cents: Math.round(value * 100), currency: currencyFromSymbol(symbol) }
 }
 
-/** « 141 570 », « (7 624) », « 1.234 » → 141570 */
 export function parseCount(text: string | null | undefined): number | null {
   if (!text) return null
   const m = text.replace(/[   ]/g, '').match(/\d[\d.,]*/)
@@ -48,7 +42,6 @@ export function parseCount(text: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-/** « 4,7 sur 5 étoiles » → 4.7 */
 export function parseRating(text: string | null | undefined): number | null {
   if (!text) return null
   const m = text.match(/\d+(?:[.,]\d+)?/)
@@ -67,15 +60,10 @@ function monthIndex(token: string): number {
 function daysUntil(day: number, month: number, now: Date): number {
   const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
   let target = Date.UTC(now.getFullYear(), month, day)
-  // Une date « passée » de plus d'un mois désigne l'année suivante (ex. livraison en janvier vue en décembre)
   if (target < today - 31 * 86_400_000) target = Date.UTC(now.getFullYear() + 1, month, day)
   return Math.max(0, Math.round((target - today) / 86_400_000))
 }
 
-/**
- * Convertit un texte de livraison français en nombre de jours.
- * Gère « demain », « vendredi 2 octobre », « 2 - 5 octobre », « 30 sept. - 3 oct. ».
- */
 export function parseFrenchDeliveryDays(text: string | null | undefined, now = new Date()): { min: number, max: number } | null {
   if (!text) return null
   const t = text.toLowerCase()
@@ -91,7 +79,6 @@ export function parseFrenchDeliveryDays(text: string | null | undefined, now = n
   }
   if (!dates.length) return null
 
-  // Dans « 2 - 5 octobre », le premier jour hérite du mois du second
   const lastMonth = [...dates].reverse().find(d => d.month !== null)?.month
   if (lastMonth == null) return null
   const days = dates

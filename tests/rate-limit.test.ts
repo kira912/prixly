@@ -17,7 +17,7 @@ function memoryStorage(): CounterStorage & { ttls: number[] } {
 describe('hit', () => {
   const rule = { limit: 3, windowSec: 60 }
 
-  it('autorise jusqu’à la limite puis refuse', async () => {
+  it('allows up to the limit then refuses', async () => {
     const s = memoryStorage()
     const results = []
     for (let i = 0; i < 5; i++) results.push(await hit(s, 'k', rule, 1000))
@@ -25,20 +25,20 @@ describe('hit', () => {
     expect(results.map(r => r.remaining)).toEqual([2, 1, 0, 0, 0])
   })
 
-  it('repart de zéro à la fin de la fenêtre', async () => {
+  it('starts over at the end of the window', async () => {
     const s = memoryStorage()
     for (let i = 0; i < 4; i++) await hit(s, 'k', rule, 0)
     expect((await hit(s, 'k', rule, 59_999)).allowed).toBe(false)
     expect((await hit(s, 'k', rule, 60_000)).allowed).toBe(true)
   })
 
-  it('isole les clés', async () => {
+  it('isolates keys', async () => {
     const s = memoryStorage()
     for (let i = 0; i < 4; i++) await hit(s, 'a', rule, 0)
     expect((await hit(s, 'b', rule, 0)).allowed).toBe(true)
   })
 
-  it('indique le délai avant réinitialisation et le transmet en TTL', async () => {
+  it('returns the delay before reset and passes it as TTL', async () => {
     const s = memoryStorage()
     await hit(s, 'k', rule, 0)
     const r = await hit(s, 'k', rule, 45_500)

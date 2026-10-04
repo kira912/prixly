@@ -2,10 +2,9 @@
 import type { MarketplaceOffer, Product } from '~~/server/database/schema'
 import { AMAZON_MARKETPLACES, marketplaceOf } from '~~/server/lib/marketplaces'
 
-// Prix du même produit sur les autres Amazon européens ; comparaison sur le prix de l'article seul :
-// Amazon calcule port et délai d'après la localisation du serveur (IP), pas celle de l'utilisateur
 const props = defineProps<{ product: Product, offers: MarketplaceOffer[] }>()
 const emit = defineEmits<{ updated: [] }>()
+const { t } = useI18n()
 
 const loading = ref(false)
 const error = ref<string | null>(null)
@@ -23,13 +22,6 @@ async function compare() {
   finally {
     loading.value = false
   }
-}
-
-const STATUS_LABELS: Record<MarketplaceOffer['status'], string> = {
-  ok: '',
-  unavailable: 'Indisponible',
-  not_found: 'Non vendu',
-  error: 'Échec du relevé',
 }
 
 const rows = computed(() => {
@@ -51,7 +43,6 @@ const rows = computed(() => {
       return {
         ...r,
         flag: m?.flag ?? '',
-        country: m?.country ?? r.marketplace,
         domain: m?.host.replace(/^www\./, '') ?? r.marketplace,
         diffCents: comparable ? r.priceCents! - base! : null,
         cheapest: cheapest != null && r.priceCents === cheapest,
@@ -66,19 +57,19 @@ const fetchedAt = computed(() => props.offers[0]?.fetchedAt ?? null)
 <template>
   <section class="offers">
     <div class="section-header">
-      <h2>Prix sur les autres Amazon</h2>
+      <h2>{{ t('offers.title') }}</h2>
       <button class="btn btn-ghost" :disabled="loading" @click="compare">
-        {{ loading ? 'Comparaison…' : offers.length ? 'Mettre à jour' : 'Comparer' }}
+        {{ loading ? t('offers.comparing') : offers.length ? t('offers.update') : t('offers.compare') }}
       </button>
     </div>
 
     <p v-if="!offers.length && !loading" class="muted small">
-      Compare le prix de ce produit sur Amazon Allemagne, Espagne, Italie, Pays-Bas et Belgique.
+      {{ t('offers.intro') }}
     </p>
     <div v-if="loading && !offers.length" class="loading-state" aria-live="polite">
       <div class="spinner" />
       <p class="muted small">
-        Relevé des 5 pays…
+        {{ t('offers.checking') }}
       </p>
     </div>
 
@@ -87,13 +78,13 @@ const fetchedAt = computed(() => props.offers[0]?.fetchedAt ?? null)
         <thead>
           <tr>
             <th scope="col">
-              Pays
+              {{ t('offers.country') }}
             </th>
             <th scope="col">
-              Prix
+              {{ t('offers.price') }}
             </th>
             <th scope="col">
-              <span class="sr-only">Écart avec le prix actuel</span>
+              <span class="sr-only">{{ t('offers.diff') }}</span>
             </th>
           </tr>
         </thead>
@@ -103,26 +94,26 @@ const fetchedAt = computed(() => props.offers[0]?.fetchedAt ?? null)
               <a :href="r.url" target="_blank" rel="noopener noreferrer">
                 <span aria-hidden="true">{{ r.flag }}</span> {{ r.domain }}
               </a>
-              <span v-if="r.own" class="muted small"> · ce produit</span>
+              <span v-if="r.own" class="muted small"> · {{ t('offers.thisProduct') }}</span>
             </td>
             <td>
               <template v-if="r.status === 'ok'">
                 <strong>{{ formatMoney(r.priceCents, r.currency ?? product.currency) }}</strong>
-                <span v-if="r.cheapest" class="cheapest-tag">le moins cher</span>
+                <span v-if="r.cheapest" class="cheapest-tag">{{ t('offers.cheapest') }}</span>
               </template>
-              <span v-else class="muted small" :title="r.error ?? undefined">{{ STATUS_LABELS[r.status] }}</span>
+              <span v-else class="muted small" :title="r.error ?? undefined">{{ t(`offers.status.${r.status}`) }}</span>
             </td>
             <td class="offer-diff">
               <span v-if="r.diffCents != null && r.diffCents !== 0" class="delta" :data-trend="r.diffCents < 0 ? 'down' : 'up'">
                 {{ r.diffCents < 0 ? '−' : '+' }}{{ formatMoney(Math.abs(r.diffCents), product.currency) }}
               </span>
-              <span v-else-if="r.diffCents === 0" class="muted small">même prix</span>
+              <span v-else-if="r.diffCents === 0" class="muted small">{{ t('offers.samePrice') }}</span>
             </td>
           </tr>
         </tbody>
       </table>
       <p class="muted small">
-        Prix de l'article seul, relevé {{ fetchedAt ? formatRelative(fetchedAt) : '' }}. Frais de port vers la France et délai à vérifier sur chaque site ; la TVA est ajustée au taux français au paiement.
+        {{ t('offers.footnote', { when: fetchedAt ? formatRelative(fetchedAt) : '' }) }}
       </p>
     </template>
 

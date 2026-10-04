@@ -2,16 +2,13 @@ import { createHash, randomBytes } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import { subscribers } from '../database/schema'
+import type { Locale } from '../lib/i18n'
 
 const COOKIE = 'prixly_sid'
 const MAX_AGE = 60 * 60 * 24 * 365 * 2
 
 const hash = (token: string) => createHash('sha256').update(token).digest('hex')
 
-/**
- * Identité anonyme : un jeton aléatoire en cookie httpOnly désigne un abonné.
- * Pas de compte : chaque navigateur / appli installée est un abonné distinct.
- */
 export async function getSubscriberId(event: H3Event): Promise<number | null> {
   const token = getCookie(event, COOKIE)
   if (!token) return null
@@ -26,7 +23,7 @@ export async function requireSubscriberId(event: H3Event): Promise<number> {
 
   const token = randomBytes(32).toString('base64url')
   const db = await useDb()
-  const row = await db.insert(subscribers).values({ tokenHash: hash(token), createdAt: new Date() }).returning({ id: subscribers.id }).get()
+  const row = await db.insert(subscribers).values({ tokenHash: hash(token), locale: eventLocale(event), createdAt: new Date() }).returning({ id: subscribers.id }).get()
   setCookie(event, COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',
@@ -35,4 +32,8 @@ export async function requireSubscriberId(event: H3Event): Promise<number> {
     maxAge: MAX_AGE,
   })
   return row.id
+}
+
+export async function setSubscriberLocale(subscriberId: number, locale: Locale) {
+  await (await useDb()).update(subscribers).set({ locale }).where(eq(subscribers.id, subscriberId)).run()
 }

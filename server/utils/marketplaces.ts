@@ -3,22 +3,16 @@ import { marketplaceOffers, type MarketplaceOffer, type Product } from '../datab
 import { marketplaceRef, otherMarketplaces } from '../lib/marketplaces'
 import { ExtractError } from '../lib/types'
 
-/** Une comparaison plus récente est resservie telle quelle (double clic, rechargement). */
 const FRESH_MS = 30 * 60 * 1000
-/** Décalage entre deux requêtes : les pays sont relevés en parallèle, sans partir tous à la même milliseconde. */
 const STAGGER_MS = 600
 
 export async function getOffers(productId: number): Promise<MarketplaceOffer[]> {
   return (await useDb()).select().from(marketplaceOffers).where(eq(marketplaceOffers.productId, productId)).all()
 }
 
-/**
- * Relève le prix du même ASIN sur les autres Amazon européens.
- * Un captcha sur l'un d'eux met Amazon en retrait pour les relevés planifiés, comme tout relevé (extractTracked).
- */
 export async function compareMarketplaces(product: Product): Promise<MarketplaceOffer[]> {
   const codes = otherMarketplaces(product)
-  if (!codes.length) throw createError({ statusCode: 400, message: 'La comparaison entre pays n\'existe que pour Amazon.' })
+  if (!codes.length) return []
 
   const existing = await getOffers(product.id)
   if (existing.length === codes.length && existing.every(o => Date.now() - o.fetchedAt.getTime() < FRESH_MS)) return existing

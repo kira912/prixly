@@ -5,11 +5,11 @@ import { ExtractError, type ProductInfo, type ProductRef } from '../types'
 
 export async function extractAmazon(ref: ProductRef, fetchImpl: typeof fetch = browserFetch): Promise<ProductInfo> {
   const { status, body } = await fetchText(ref.url, {}, fetchImpl)
-  if (status === 404) throw new ExtractError('not_found', 'Produit introuvable sur Amazon.')
+  if (status === 404) throw new ExtractError('not_found', 'Product not found on Amazon.', { platform: 'Amazon' })
   if (status === 503 || (/validateCaptcha|captcha/i.test(body.slice(0, 20_000)) && !body.includes('id="productTitle"'))) {
-    throw new ExtractError('blocked', 'Amazon demande un captcha : réessaie dans quelques minutes.')
+    throw new ExtractError('blocked', 'Amazon is asking for a captcha.', { platform: 'Amazon' })
   }
-  if (status !== 200) throw new ExtractError('network', `Amazon a répondu ${status}.`)
+  if (status !== 200) throw new ExtractError('network', `Amazon responded ${status}.`, { platform: 'Amazon' })
   return parseAmazonHtml(body, ref)
 }
 
@@ -17,7 +17,7 @@ export function parseAmazonHtml(html: string, ref: ProductRef, now = new Date())
   const $ = cheerio.load(html)
 
   const title = $('#productTitle').first().text().replace(/\s+/g, ' ').trim()
-  if (!title) throw new ExtractError('parse', 'Titre du produit introuvable dans la page Amazon.')
+  if (!title) throw new ExtractError('parse', 'Product title not found in the Amazon page.', { platform: 'Amazon' })
 
   const { priceCents, currency } = readPrice($, html)
   const delivery = readDelivery($, now)
@@ -36,14 +36,12 @@ export function parseAmazonHtml(html: string, ref: ProductRef, now = new Date())
 }
 
 function readPrice($: cheerio.CheerioAPI, html: string): { priceCents: number | null, currency: string } {
-  // 1. Données structurées de la buybox : l'offre « NEW » est l'achat ponctuel (hors abonnement)
   for (const m of html.matchAll(/\{"displayPrice":"[^"]*","priceAmount":([\d.]+),"currencySymbol":"([^"]*)"[^{}]*?"buyingOptionType":"(\w+)"/g)) {
     if (m[3] === 'NEW') {
       return { priceCents: Math.round(Number.parseFloat(m[1]!) * 100), currency: currencyFromSymbol(m[2]) }
     }
   }
 
-  // 2. Bloc prix affiché
   const selectors = [
     '#corePriceDisplay_desktop_feature_div .apex-pricetopay-value .a-offscreen',
     '#corePrice_feature_div .apex-pricetopay-value .a-offscreen',
@@ -62,10 +60,6 @@ function readPrice($: cheerio.CheerioAPI, html: string): { priceCents: number | 
   return { priceCents: null, currency: 'EUR' }
 }
 
-/**
- * Prix barré du bloc prix principal (« Prix conseillé », « Ancien prix », « Prix le plus bas des 30 derniers jours »…).
- * Hors de ce bloc, les prix barrés appartiennent à d'autres offres (abonnement, produits sponsorisés).
- */
 function readListPrice($: cheerio.CheerioAPI, priceCents: number | null): number | null {
   if (priceCents == null) return null
   const el = $('#corePriceDisplay_desktop_feature_div, #corePrice_feature_div')
@@ -92,10 +86,10 @@ function readImage($: cheerio.CheerioAPI): string | null {
   return img.attr('src') ?? $('meta[property="og:image"]').attr('content') ?? null
 }
 
-function readDelivery($: cheerio.CheerioAPI, now: Date): Pick<ProductInfo, 'shippingCents' | 'shippingNote' | 'deliveryMinDays' | 'deliveryMaxDays' | 'deliveryText'> {
+function readDelivery($: cheerio.CheerioAPI, now: Date): Pick<ProductInfo, 'shippingCents' | 'shippingNote' | 'freeShippingOver' | 'shipsFrom' | 'deliveryMinDays' | 'deliveryMaxDays' | 'deliveryText'> {
   const el = $('#mir-layout-DELIVERY_BLOCK [data-csa-c-delivery-price]').first()
   if (!el.length) {
-    return { shippingCents: null, shippingNote: null, deliveryMinDays: null, deliveryMaxDays: null, deliveryText: null }
+    return { shippingCents: null, shippingNote: null, freeShippingOver: null, shipsFrom: null, deliveryMinDays: null, deliveryMaxDays: null, deliveryText: null }
   }
 
   const rawPrice = el.attr('data-csa-c-delivery-price')?.trim() ?? ''
@@ -106,7 +100,9 @@ function readDelivery($: cheerio.CheerioAPI, now: Date): Pick<ProductInfo, 'ship
 
   return {
     shippingCents,
-    shippingNote: condition ? `Livraison ${rawPrice.toLowerCase()} ${condition}` : null,
+    shippingNote: condition ? `${rawPrice} ${condition}` : null,
+    freeShippingOver: null,
+    shipsFrom: null,
     deliveryText,
     deliveryMinDays: days?.min ?? null,
     deliveryMaxDays: days?.max ?? null,

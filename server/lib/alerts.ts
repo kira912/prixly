@@ -1,34 +1,23 @@
-/** Baisse minimale pour alerter : l'un OU l'autre seuil suffit. */
+import { DEFAULT_LOCALE, intlLocale, translator, type Locale } from './i18n'
+
 export const DROP_MIN_RATIO = 0.05
 export const DROP_MIN_CENTS = 50
 
 export type AlertReason = 'target' | 'lowest' | 'drop'
 
 export interface AlertInput {
-  /** Total avant ce relevé */
   previousCents: number | null
-  /** Total relevé à l'instant */
   currentCents: number | null
-  /** Plus bas total relevé AVANT ce relevé */
   lowestBeforeCents: number | null
-  /** Prix cible fixé par l'abonné */
   targetPriceCents: number | null
-  /** Total de la dernière alerte envoyée à cet abonné pour ce produit */
   lastNotifiedCents: number | null
 }
 
-/**
- * Décide s'il faut prévenir un abonné après un relevé ; renvoie la raison la plus forte, ou null.
- * - jamais sur une hausse ou un produit indisponible ;
- * - jamais deux fois pour un même niveau de prix : il faut descendre sous la dernière alerte ;
- * - sur une baisse : prix cible atteint, nouveau plus bas historique, ou baisse ≥ 5 % / ≥ 0,50 €.
- */
 export function alertReason(i: AlertInput): AlertReason | null {
   const cur = i.currentCents
   if (cur == null) return null
   if (i.lastNotifiedCents != null && cur >= i.lastNotifiedCents) return null
 
-  // Seule une baisse déclenche une alerte : un prix déjà sous la cible quand on la fixe se voit à l'écran
   if (i.previousCents == null || cur >= i.previousCents) return null
 
   if (i.targetPriceCents != null && cur <= i.targetPriceCents) return 'target'
@@ -38,10 +27,6 @@ export function alertReason(i: AlertInput): AlertReason | null {
   return null
 }
 
-/**
- * Le prix est nettement remonté depuis la dernière alerte (mêmes seuils qu'une baisse) :
- * on oublie cette alerte pour pouvoir prévenir à la prochaine vraie baisse.
- */
 export function shouldResetNotified(lastNotifiedCents: number | null, currentCents: number | null): boolean {
   if (lastNotifiedCents == null || currentCents == null) return false
   const rise = currentCents - lastNotifiedCents
@@ -59,20 +44,22 @@ export function formatAlert(
   previousCents: number | null,
   currentCents: number,
   targetPriceCents: number | null,
+  locale: Locale = DEFAULT_LOCALE,
 ): AlertMessage {
-  const money = (c: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: p.currency }).format(c / 100)
+  const t = translator(locale)
+  const money = (c: number) => new Intl.NumberFormat(intlLocale(locale), { style: 'currency', currency: p.currency }).format(c / 100)
+  const percent = (ratio: number) => new Intl.NumberFormat(intlLocale(locale), { style: 'percent', maximumFractionDigits: 0 }).format(ratio)
   const name = p.title.length > 60 ? `${p.title.slice(0, 60).replace(/[\s,;:-]+\S*$/, '')}…` : p.title
 
   const parts: string[] = []
   if (previousCents != null && previousCents > currentCents) {
-    const pct = Math.round(((previousCents - currentCents) / previousCents) * 100)
-    parts.push(`${money(previousCents)} → ${money(currentCents)} (-${pct} %)`)
+    parts.push(`${money(previousCents)} → ${money(currentCents)} (${percent(-(previousCents - currentCents) / previousCents)})`)
   }
   else {
     parts.push(money(currentCents))
   }
-  if (reason === 'lowest') parts.push('plus bas relevé')
-  if (reason === 'target' && targetPriceCents != null) parts.push(`sous ta cible de ${money(targetPriceCents)}`)
+  if (reason === 'lowest') parts.push(t('alerts.lowest'))
+  if (reason === 'target' && targetPriceCents != null) parts.push(t('alerts.belowTarget', { target: money(targetPriceCents) }))
 
-  return { title: `↓ ${name}`, body: `${parts.join(' · ')} (port compris)` }
+  return { title: `↓ ${name}`, body: `${parts.join(' · ')} ${t('alerts.shippingIncluded')}` }
 }

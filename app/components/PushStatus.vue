@@ -1,26 +1,26 @@
 <script setup lang="ts">
-// État des notifications de cet appareil, avec l'action utile selon le cas
+const { t } = useI18n()
 const { status, busy, error, enable } = usePush()
 </script>
 
 <template>
   <div class="push-status" aria-live="polite">
     <p v-if="status === 'subscribed'" class="small">
-      🔔 Alertes activées sur cet appareil. <NuxtLink to="/notifications">Gérer</NuxtLink>
+      {{ t('push.enabled') }} <NuxtLink to="/notifications">{{ t('push.manage') }}</NuxtLink>
     </p>
     <p v-else-if="status === 'available'" class="small">
       <button class="btn btn-ghost" :disabled="busy" @click="enable">
-        🔔 Activer les alertes sur cet appareil
+        {{ t('push.enable') }}
       </button>
     </p>
     <p v-else-if="status === 'denied'" class="small muted">
-      🔕 Notifications bloquées pour ce site : autorise-les dans les réglages du navigateur pour recevoir les alertes.
+      {{ t('push.denied') }}
     </p>
     <p v-else-if="status === 'unsupported'" class="small muted">
-      🔕 Ce navigateur ne reçoit pas de notifications. Sur iPhone, ajoute Prixly à l'écran d'accueil (Partager → Sur l'écran d'accueil) puis ouvre-le depuis là.
+      {{ t('push.unsupported') }}
     </p>
     <p v-else-if="status === 'server-disabled'" class="small muted">
-      🔕 Notifications non configurées sur le serveur (clés VAPID manquantes).
+      {{ t('push.serverDisabled') }}
     </p>
     <p v-if="error" class="alert small" role="alert">
       {{ error }}

@@ -1,0 +1,338 @@
+{
+  "app": {
+    "description": "Price comparison across marketplaces: the real price, shipping included, with price-drop alerts."
+  },
+  "nav": {
+    "main": "Main navigation",
+    "search": "Search",
+    "watched": "Watched",
+    "notifications": "Notifications",
+    "language": "Language"
+  },
+  "common": {
+    "retry": "Try again",
+    "home": "Home",
+    "back": "Back",
+    "loading": "Loading…",
+    "unavailable": "Unavailable",
+    "free": "Free",
+    "ok": "OK",
+    "unknownError": "Unknown error"
+  },
+  "format": {
+    "unknownDelay": "Unknown delivery time",
+    "today": "Today",
+    "days": "{n} day | {n} days"
+  },
+  "home": {
+    "title": "The real price, before you buy.",
+    "lead": "Prixly works out what an Amazon or AliExpress product really costs you (price, shipping and delivery time) and lets you know when it drops. Looking for a product but not sure where? Type its name.",
+    "worksWith": "Works with",
+    "myWatched": "Watched products",
+    "seeAll": "See all ({n})",
+    "recent": "Recently viewed",
+    "howItWorksQuestion": "How does it work?",
+    "howItWorks": "How it works"
+  },
+  "howItWorks": {
+    "step1Title": "Share the product",
+    "step1Text": "In the Amazon or AliExpress app: {action}. Or paste the link in the field above.",
+    "step1Action": "Share → Prixly",
+    "step2Title": "See the real cost",
+    "step2Text": "Price + shipping = the total you will actually pay, with delivery time, rating and price history.",
+    "step3Title": "Watch the price",
+    "step3Text": "Prixly checks the price every 6 hours and sends you a notification when it drops or goes below your target price."
+  },
+  "linkForm": {
+    "label": "Product link or name",
+    "placeholder": "Paste an Amazon or AliExpress link, or search for a product…",
+    "paste": "Paste",
+    "submit": "Go",
+    "analyzing": "Analyzing…"
+  },
+  "share": {
+    "nothingTitle": "Nothing to analyze",
+    "nothingText": "No link was received.",
+    "errorTitle": "Couldn't analyze this link",
+    "analyzing": "Analyzing the product…"
+  },
+  "login": {
+    "pageTitle": "Sign in",
+    "title": "Private access",
+    "text": "Enter the access code to use Prixly on this device.",
+    "label": "Access code",
+    "checking": "Checking…",
+    "submit": "Enter"
+  },
+  "watched": {
+    "title": "Watched products",
+    "intro": "Prices checked every 6 hours. You get a notification when one of them drops.",
+    "alertSettings": "Alert settings",
+    "empty": "You're not watching any product yet. Open a product page and tap {action}.",
+    "emptyAction": "Watch price"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "intro": "For each watched product, Prixly sends you a notification when the total (price + shipping) drops by at least 5% or €0.50, hits a new low, or goes below your target price.",
+    "sendTest": "Send a test notification",
+    "disable": "Turn off on this device",
+    "sent": "Sent. Nothing received? Make sure Chrome notifications aren't silenced in your Android settings."
+  },
+  "install": {
+    "androidTitle": "Share straight from Amazon",
+    "androidText": "Install Prixly: it will show up in the {share} menu of the Amazon and AliExpress apps.",
+    "share": "Share",
+    "installButton": "Install Prixly",
+    "chromeHint": "In Chrome: menu ⋮ → {action} (not “Add to Home screen”).",
+    "chromeAction": "Install app",
+    "iosTitle": "On iPhone",
+    "iosText": "iOS doesn't allow sharing to a web app: copy the product link and paste it here. To receive price alerts, add Prixly to your Home Screen (Share → {action}).",
+    "iosAction": "Add to Home Screen",
+    "desktopTitle": "On your Android phone",
+    "desktopText": "Open Prixly in Chrome and install it: it will show up in the {share} menu of the Amazon and AliExpress apps. On a computer, just paste the link.",
+    "installDesktop": "Install on this computer"
+  },
+  "push": {
+    "enabled": "🔔 Alerts are on for this device.",
+    "manage": "Manage",
+    "enable": "🔔 Turn on alerts for this device",
+    "denied": "🔕 Notifications are blocked for this site: allow them in your browser settings to receive alerts.",
+    "unsupported": "🔕 This browser can't receive notifications. On iPhone, add Prixly to your Home Screen (Share → Add to Home Screen) and open it from there.",
+    "serverDisabled": "🔕 Notifications aren't configured on the server (missing VAPID keys).",
+    "swUnavailable": "Service worker unavailable (it only runs in the production build).",
+    "notConfigured": "Notifications aren't configured on the server."
+  },
+  "delta": {
+    "lowest": "lowest"
+  },
+  "verdict": {
+    "period": "over {days} of tracking",
+    "lowestTitle": "Lowest price seen",
+    "goodTitle": "Good time to buy",
+    "belowAverage": "{pct}% below the average ({avg}) {period}.",
+    "highTitle": "High price",
+    "highText": "{pct}% above the average ({avg}) {period}: better wait for a drop.",
+    "usualTitle": "Usual price",
+    "usualText": "Close to the average ({avg}) {period}.",
+    "dubiousTitle": "Dubious deal",
+    "dubiousText": "The struck-through price ({list}) was never charged in {days} of tracking: the highest price seen is {highest}.",
+    "realTitle": "Genuine deal",
+    "realText": "The product was indeed sold at {list} or more during tracking.",
+    "pendingTitle": "Deal not verifiable yet",
+    "pendingWatched": "It takes {n} days of tracking to know whether the struck-through price ({list}) was really charged.",
+    "pendingNotWatched": "Watch the price for {n} days to know whether the struck-through price ({list}) was really charged."
+  },
+  "product": {
+    "notFound": "Product not found",
+    "reviews": "{n} review | {n} reviews",
+    "price": "Price",
+    "shipping": "Shipping",
+    "total": "Total",
+    "delay": "Delivery",
+    "freeShippingOver": "Free shipping on orders over {amount}",
+    "shipsFrom": "Ships from {country}",
+    "viewOn": "View on {platform}",
+    "watching": "✓ Watching price",
+    "watch": "Watch price",
+    "refreshing": "Updating…",
+    "refresh": "Refresh",
+    "notifyBelow": "Notify me when the total goes below",
+    "alertInfo": "You'll also get an alert for every drop of at least 5% (or €0.50) and every new lowest price.",
+    "lastCheckFailed": "Last automatic check failed ({when}).",
+    "checked": "Checked {when}",
+    "watchedSince": "watched since {date}, checked automatically every 6 hours",
+    "history": "Total price history",
+    "current": "Current",
+    "lowest": "Lowest",
+    "highest": "Highest",
+    "seeChanges": "See the {n} changes",
+    "since": "Since",
+    "noVariation": "No price change yet.",
+    "autoChecked": "The price is checked automatically every 6 hours.",
+    "watchToTrack": "Watch this product to track its price automatically and get notified of drops."
+  },
+  "productList": {
+    "checkFailed": "⚠ check failed"
+  },
+  "offers": {
+    "title": "Price on other Amazon stores",
+    "comparing": "Comparing…",
+    "update": "Update",
+    "compare": "Compare",
+    "intro": "Compare this product's price on Amazon Germany, Spain, Italy, the Netherlands and Belgium.",
+    "checking": "Checking 5 countries…",
+    "country": "Country",
+    "price": "Price",
+    "diff": "Difference with the current price",
+    "thisProduct": "this product",
+    "cheapest": "cheapest",
+    "samePrice": "same price",
+    "footnote": "Item price only, checked {when}. Check shipping to France and delivery time on each site; VAT is adjusted to the French rate at checkout.",
+    "status": {
+      "unavailable": "Unavailable",
+      "not_found": "Not sold",
+      "error": "Check failed"
+    }
+  },
+  "chart": {
+    "label": "Total price history, from {from} to {to}"
+  },
+  "search": {
+    "pageTitle": "Search",
+    "title": "Where to find it?",
+    "lead": "Search for a product on every platform, new or used, in one go.",
+    "label": "Product to search for",
+    "placeholder": "E.g. Moulinex bread maker",
+    "submit": "Search",
+    "recent": "Recent:",
+    "elsewhere": "Search elsewhere · {kind}",
+    "tracked": "Prixly tracking",
+    "foundTitle": "Found it?",
+    "foundText": "For an Amazon or AliExpress product (marked “Prixly tracking”), share it to Prixly or paste its link on the home page: total cost with shipping, price verdict, tracking and price-drop alerts.",
+    "kinds": {
+      "new": "New",
+      "used": "Used and refurbished"
+    },
+    "hints": {
+      "aliexpress": "cheaper, slower delivery",
+      "temu": "low prices, variable quality",
+      "idealo": "price comparison: hundreds of shops",
+      "google-shopping": "every shop",
+      "leboncoin": "listings near you",
+      "vinted": "fashion, home, kids",
+      "ebay": "new and used, auctions",
+      "backmarket": "refurbished tech, with warranty",
+      "amazon-warehouse": "checked Amazon returns"
+    }
+  },
+  "ebay": {
+    "title": "eBay listings",
+    "results": "{n} result | {n} results",
+    "condition": "Condition",
+    "all": "All",
+    "new": "New",
+    "used": "Used",
+    "sortBy": "Sort by",
+    "relevance": "Relevance",
+    "cheapest": "Cheapest (shipping included)",
+    "aiSort": "✨ Sort with AI",
+    "aiSorting": "Sorting…",
+    "aiSorted": "Sorted by AI: grouped by product, accessories and parts set aside.",
+    "rawList": "Raw list",
+    "searching": "Searching eBay…",
+    "none": "No eBay listing that ships to France for this search.",
+    "noMatch": "No listing really matches the search: try more specific terms.",
+    "listings": "{n} listing | {n} listings",
+    "from": "from {price}",
+    "unsorted": "Unsorted",
+    "hidden": "{n} listing set aside | {n} listings set aside",
+    "kinds": {
+      "accessory": "accessory",
+      "for_parts": "for parts",
+      "unrelated": "other product"
+    },
+    "item": {
+      "shippingUnknown": "shipping to check",
+      "shippingFree": "free shipping",
+      "shipping": "shipping {amount}",
+      "lot": "lot of {n} · {price} each",
+      "auction": "Auction",
+      "endsSoon": "ends soon",
+      "hoursLeft": "{n} h left",
+      "daysLeft": "{n} days left",
+      "shipsFrom": "ships from {country}"
+    },
+    "otherListings": "Other listings"
+  },
+  "assistant": {
+    "toggle": "Not sure what to look for? Describe what you need to the assistant",
+    "label": "Not sure what to look for? Describe what you need: the assistant tells you what to search for and what to check.",
+    "placeholder": "E.g. a cordless vacuum for a small flat with a cat, under €200",
+    "thinking": "The assistant is thinking…",
+    "ask": "✨ Get advice",
+    "newRequest": "New request",
+    "answerPlaceholder": "Your answer (optional)",
+    "clarify": "Refine",
+    "toSearch": "What to search for",
+    "budgetMax": "Max budget {amount}",
+    "check": "What to check in the listing",
+    "avoid": "What to avoid",
+    "conditions": {
+      "new": "New is better",
+      "used": "Used is fine",
+      "any": "New or used"
+    },
+    "results": {
+      "title": "Best offers found",
+      "searching": "Looking for real offers…",
+      "searchingHint": "Searching eBay and the web, checking prices, then ranking them for your need. This can take 30 seconds.",
+      "fit": {
+        "great": "Great fit",
+        "good": "Good choice",
+        "partial": "Partial fit"
+      },
+      "priceUnknown": "price to check",
+      "verified": "price checked",
+      "openInPrixly": "Analyze in Prixly",
+      "others": "{n} other offer | {n} other offers",
+      "none": "No offer found. Try one of the searches above or refine your need.",
+      "noSources": "For real results, set up eBay keys or a Groq key (LLM_API_KEY) with the default model.",
+      "ebayError": "eBay didn't respond, results are incomplete.",
+      "webError": "Web search didn't respond, results are incomplete.",
+      "unranked": "AI ranking failed: here are the offers found, unranked.",
+      "retry": "Search again",
+      "webQuota": "Free web search quota (Groq) reached for today: results are incomplete. Add eBay keys to still get listings."
+    }
+  },
+  "duration": {
+    "seconds": "{n} s",
+    "minutes": "{n} min",
+    "hours": "{n} h"
+  },
+  "errors": {
+    "accessRequired": "Access code required.",
+    "wrongCode": "Wrong code.",
+    "unknownProduct": "Unknown product.",
+    "invalidId": "Invalid identifier.",
+    "invalidBody": "Invalid request.",
+    "invalidTarget": "Invalid target price.",
+    "tooManyWatches": "You're already watching {max} products: stop watching one to add another.",
+    "pasteLink": "Paste an Amazon or AliExpress link.",
+    "amazonOnly": "Comparing across countries is only available for Amazon.",
+    "invalidSubscription": "Invalid push subscription.",
+    "endpointRefused": "Push endpoint refused.",
+    "pushNotConfigured": "Notifications aren't configured on the server (missing VAPID keys).",
+    "noDevice": "No device is subscribed to notifications.",
+    "rateLimitDaily": "Daily limit reached for this action. Try again tomorrow.",
+    "rateLimit": "Too many requests. Try again in {delay}.",
+    "searchInvalid": "Empty or too long search.",
+    "ebayDown": "eBay isn't responding right now.",
+    "ebayQuota": "Daily eBay API quota reached. Try again tomorrow.",
+    "curateDisabled": "AI sorting isn't enabled.",
+    "assistantDisabled": "The assistant isn't enabled.",
+    "needTooLong": "Describe what you need in {max} characters or fewer.",
+    "answerTooLong": "Answer too long.",
+    "ai": {
+      "unavailable": "AI is unavailable right now.",
+      "busy": "AI is in high demand. Try again in a minute.",
+      "failed": "AI couldn't answer. Try again later.",
+      "refused": "AI couldn't handle this request.",
+      "quota": "Free AI quota reached for today. Try again tomorrow."
+    },
+    "extract": {
+      "unsupported": "This link isn't a recognized Amazon or AliExpress product.",
+      "no_link": "No link found in the shared text.",
+      "not_found": "Product not found on {platform}.",
+      "blocked": "{platform} is asking for a bot check: try again in a few minutes.",
+      "parse": "Couldn't read the {platform} page.",
+      "network": "{platform} isn't responding right now.",
+      "follow_failed": "Couldn't follow the shared link."
+    }
+  },
+  "alerts": {
+    "lowest": "lowest price seen",
+    "belowTarget": "below your target of {target}",
+    "shippingIncluded": "(shipping included)",
+    "testBody": "Price alerts work on this device."
+  }
+}

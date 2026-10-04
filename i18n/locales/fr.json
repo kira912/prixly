@@ -1,0 +1,338 @@
+{
+  "app": {
+    "description": "Comparateur de prix entre marketplaces : le vrai prix, port compris, et des alertes de baisse."
+  },
+  "nav": {
+    "main": "Navigation principale",
+    "search": "Rechercher",
+    "watched": "Suivis",
+    "notifications": "Notifications",
+    "language": "Langue"
+  },
+  "common": {
+    "retry": "Réessayer",
+    "home": "Accueil",
+    "back": "Retour",
+    "loading": "Chargement…",
+    "unavailable": "Indisponible",
+    "free": "Gratuite",
+    "ok": "OK",
+    "unknownError": "Erreur inconnue"
+  },
+  "format": {
+    "unknownDelay": "Délai inconnu",
+    "today": "Aujourd’hui",
+    "days": "{n} jour | {n} jours"
+  },
+  "home": {
+    "title": "Le vrai prix, avant d'acheter.",
+    "lead": "Prixly calcule ce que te coûte vraiment un produit Amazon ou AliExpress (prix, frais de port et délai de livraison) et te prévient quand il baisse. Tu cherches un produit sans savoir où ? Tape son nom.",
+    "worksWith": "Fonctionne avec",
+    "myWatched": "Mes suivis",
+    "seeAll": "Tout voir ({n})",
+    "recent": "Consultés récemment",
+    "howItWorksQuestion": "Comment ça marche ?",
+    "howItWorks": "Comment ça marche"
+  },
+  "howItWorks": {
+    "step1Title": "Partage le produit",
+    "step1Text": "Dans l'appli Amazon ou AliExpress : {action}. Ou colle le lien dans le champ ci-dessus.",
+    "step1Action": "Partager → Prixly",
+    "step2Title": "Vois le coût réel",
+    "step2Text": "Prix + frais de port = le total que tu paieras vraiment, avec le délai de livraison, la note et l'historique du prix.",
+    "step3Title": "Suis le prix",
+    "step3Text": "Prixly relève le prix toutes les 6 h et t'envoie une notification quand il baisse ou passe sous ton prix cible."
+  },
+  "linkForm": {
+    "label": "Lien ou nom du produit",
+    "placeholder": "Colle un lien Amazon ou AliExpress, ou cherche un produit…",
+    "paste": "Coller",
+    "submit": "Valider",
+    "analyzing": "Analyse…"
+  },
+  "share": {
+    "nothingTitle": "Rien à analyser",
+    "nothingText": "Aucun lien n'a été reçu.",
+    "errorTitle": "Impossible d'analyser ce lien",
+    "analyzing": "Analyse du produit…"
+  },
+  "login": {
+    "pageTitle": "Connexion",
+    "title": "Accès privé",
+    "text": "Saisis le code d'accès pour utiliser Prixly sur cet appareil.",
+    "label": "Code d'accès",
+    "checking": "Vérification…",
+    "submit": "Entrer"
+  },
+  "watched": {
+    "title": "Mes suivis",
+    "intro": "Prix relevés toutes les 6 h. Tu reçois une notification quand l'un d'eux baisse.",
+    "alertSettings": "Réglages des alertes",
+    "empty": "Tu ne suis encore aucun produit. Ouvre une fiche produit et touche {action}.",
+    "emptyAction": "Suivre le prix"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "intro": "Pour chaque produit suivi, Prixly t'envoie une notification quand le total (prix + port) baisse d'au moins 5 % ou 0,50 €, atteint un nouveau plus bas, ou passe sous ton prix cible.",
+    "sendTest": "Envoyer une notification de test",
+    "disable": "Désactiver sur cet appareil",
+    "sent": "Envoyée. Rien reçu ? Vérifie que les notifications de Chrome ne sont pas en mode silencieux dans les réglages Android."
+  },
+  "install": {
+    "androidTitle": "Partage directement depuis Amazon",
+    "androidText": "Installe Prixly : il apparaîtra dans le menu {share} des applis Amazon et AliExpress.",
+    "share": "Partager",
+    "installButton": "Installer Prixly",
+    "chromeHint": "Dans Chrome : menu ⋮ → {action} (pas « Ajouter à l'écran d'accueil »).",
+    "chromeAction": "Installer l'application",
+    "iosTitle": "Sur iPhone",
+    "iosText": "iOS ne permet pas le partage vers une appli web : copie le lien du produit et colle-le ici. Pour recevoir les alertes de prix, ajoute Prixly à l'écran d'accueil (Partager → {action}).",
+    "iosAction": "Sur l'écran d'accueil",
+    "desktopTitle": "Sur ton téléphone Android",
+    "desktopText": "Ouvre Prixly dans Chrome et installe-le : il apparaîtra dans le menu {share} des applis Amazon et AliExpress. Sur ordinateur, colle simplement le lien.",
+    "installDesktop": "Installer sur cet ordinateur"
+  },
+  "push": {
+    "enabled": "🔔 Alertes activées sur cet appareil.",
+    "manage": "Gérer",
+    "enable": "🔔 Activer les alertes sur cet appareil",
+    "denied": "🔕 Notifications bloquées pour ce site : autorise-les dans les réglages du navigateur pour recevoir les alertes.",
+    "unsupported": "🔕 Ce navigateur ne reçoit pas de notifications. Sur iPhone, ajoute Prixly à l'écran d'accueil (Partager → Sur l'écran d'accueil) puis ouvre-le depuis là.",
+    "serverDisabled": "🔕 Notifications non configurées sur le serveur (clés VAPID manquantes).",
+    "swUnavailable": "Service worker indisponible (il n’est actif que sur le build de production).",
+    "notConfigured": "Notifications non configurées sur le serveur."
+  },
+  "delta": {
+    "lowest": "plus bas"
+  },
+  "verdict": {
+    "period": "des {days} de suivi",
+    "lowestTitle": "Plus bas prix observé",
+    "goodTitle": "Bon moment pour acheter",
+    "belowAverage": "{pct} % sous la moyenne ({avg}) {period}.",
+    "highTitle": "Prix élevé",
+    "highText": "{pct} % au-dessus de la moyenne ({avg}) {period} : mieux vaut attendre une baisse.",
+    "usualTitle": "Prix habituel",
+    "usualText": "Proche de la moyenne ({avg}) {period}.",
+    "dubiousTitle": "Promo douteuse",
+    "dubiousText": "Le prix barré ({list}) n'a jamais été pratiqué en {days} de suivi : le prix le plus haut relevé est {highest}.",
+    "realTitle": "Promo réelle",
+    "realText": "Le produit a bien été vendu {list} ou plus pendant le suivi.",
+    "pendingTitle": "Promo pas encore vérifiable",
+    "pendingWatched": "Il faut {n} jours de suivi pour savoir si le prix barré ({list}) a vraiment été pratiqué.",
+    "pendingNotWatched": "Suis le prix pendant {n} jours pour savoir si le prix barré ({list}) a vraiment été pratiqué."
+  },
+  "product": {
+    "notFound": "Produit introuvable",
+    "reviews": "{n} avis | {n} avis",
+    "price": "Prix",
+    "shipping": "Livraison",
+    "total": "Total",
+    "delay": "Délai",
+    "freeShippingOver": "Livraison gratuite dès {amount} d'achat",
+    "shipsFrom": "Expédié depuis {country}",
+    "viewOn": "Voir sur {platform}",
+    "watching": "✓ Prix suivi",
+    "watch": "Suivre le prix",
+    "refreshing": "Mise à jour…",
+    "refresh": "Actualiser",
+    "notifyBelow": "Me prévenir si le total passe sous",
+    "alertInfo": "Tu recevras aussi une alerte à chaque baisse d'au moins 5 % (ou 0,50 €) et à chaque nouveau prix le plus bas.",
+    "lastCheckFailed": "Dernier relevé automatique en échec ({when}).",
+    "checked": "Relevé {when}",
+    "watchedSince": "suivi depuis le {date}, relevé automatique toutes les 6 h",
+    "history": "Évolution du prix total",
+    "current": "Actuel",
+    "lowest": "Plus bas",
+    "highest": "Plus haut",
+    "seeChanges": "Voir les {n} changements",
+    "since": "Depuis le",
+    "noVariation": "Pas encore de variation de prix.",
+    "autoChecked": "Le prix est relevé automatiquement toutes les 6 h.",
+    "watchToTrack": "Suis ce produit pour relever son prix automatiquement et être prévenu des baisses."
+  },
+  "productList": {
+    "checkFailed": "⚠ relevé en échec"
+  },
+  "offers": {
+    "title": "Prix sur les autres Amazon",
+    "comparing": "Comparaison…",
+    "update": "Mettre à jour",
+    "compare": "Comparer",
+    "intro": "Compare le prix de ce produit sur Amazon Allemagne, Espagne, Italie, Pays-Bas et Belgique.",
+    "checking": "Relevé des 5 pays…",
+    "country": "Pays",
+    "price": "Prix",
+    "diff": "Écart avec le prix actuel",
+    "thisProduct": "ce produit",
+    "cheapest": "le moins cher",
+    "samePrice": "même prix",
+    "footnote": "Prix de l'article seul, relevé {when}. Frais de port vers la France et délai à vérifier sur chaque site ; la TVA est ajustée au taux français au paiement.",
+    "status": {
+      "unavailable": "Indisponible",
+      "not_found": "Non vendu",
+      "error": "Échec du relevé"
+    }
+  },
+  "chart": {
+    "label": "Évolution du prix total, de {from} à {to}"
+  },
+  "search": {
+    "pageTitle": "Rechercher",
+    "title": "Où le trouver ?",
+    "lead": "Cherche un produit sur toutes les plateformes, neuf ou d'occasion, en une seule saisie.",
+    "label": "Produit recherché",
+    "placeholder": "Ex. machine à pain Moulinex",
+    "submit": "Rechercher",
+    "recent": "Récemment :",
+    "elsewhere": "Chercher ailleurs · {kind}",
+    "tracked": "suivi Prixly",
+    "foundTitle": "Trouvé ?",
+    "foundText": "Pour un produit Amazon ou AliExpress (marqués « suivi Prixly »), partage-le à Prixly ou colle son lien sur l'accueil : coût total avec le port, avis sur le prix, suivi et alertes de baisse.",
+    "kinds": {
+      "new": "Neuf",
+      "used": "Occasion et reconditionné"
+    },
+    "hints": {
+      "aliexpress": "moins cher, livraison plus longue",
+      "temu": "petits prix, qualité variable",
+      "idealo": "comparateur : des centaines de boutiques",
+      "google-shopping": "toutes les boutiques",
+      "leboncoin": "annonces près de chez toi",
+      "vinted": "mode, maison, enfants",
+      "ebay": "neuf et occasion, enchères",
+      "backmarket": "high-tech reconditionné, garanti",
+      "amazon-warehouse": "retours Amazon vérifiés"
+    }
+  },
+  "ebay": {
+    "title": "Annonces eBay",
+    "results": "{n} résultat | {n} résultats",
+    "condition": "État",
+    "all": "Tout",
+    "new": "Neuf",
+    "used": "Occasion",
+    "sortBy": "Trier par",
+    "relevance": "Pertinence",
+    "cheapest": "Moins cher (port compris)",
+    "aiSort": "✨ Trier avec l'IA",
+    "aiSorting": "Tri en cours…",
+    "aiSorted": "Triées par l'IA : regroupées par produit, accessoires et pièces écartés.",
+    "rawList": "Liste brute",
+    "searching": "Recherche sur eBay…",
+    "none": "Aucune annonce eBay livrable en France pour cette recherche.",
+    "noMatch": "Aucune annonce ne correspond vraiment à la recherche : essaie des termes plus précis.",
+    "listings": "{n} annonce | {n} annonces",
+    "from": "dès {price}",
+    "unsorted": "Non classées",
+    "hidden": "{n} annonce écartée | {n} annonces écartées",
+    "kinds": {
+      "accessory": "accessoire",
+      "for_parts": "pour pièces",
+      "unrelated": "autre produit"
+    },
+    "item": {
+      "shippingUnknown": "port à vérifier",
+      "shippingFree": "port offert",
+      "shipping": "port {amount}",
+      "lot": "lot de {n} · {price}/u",
+      "auction": "Enchère",
+      "endsSoon": "se termine bientôt",
+      "hoursLeft": "encore {n} h",
+      "daysLeft": "encore {n} j",
+      "shipsFrom": "expédié de {country}"
+    },
+    "otherListings": "Autres annonces"
+  },
+  "assistant": {
+    "toggle": "Pas sûr de quoi chercher ? Décris ton besoin à l'assistant",
+    "label": "Pas sûr de quoi chercher ? Décris ton besoin, l'assistant te dit quoi chercher et quoi vérifier.",
+    "placeholder": "Ex. un aspirateur sans fil pour un petit appart avec un chat, moins de 200 €",
+    "thinking": "L'assistant réfléchit…",
+    "ask": "✨ Demander conseil",
+    "newRequest": "Nouvelle demande",
+    "answerPlaceholder": "Ta réponse (facultatif)",
+    "clarify": "Préciser",
+    "toSearch": "À chercher",
+    "budgetMax": "Budget max {amount}",
+    "check": "À vérifier dans l'annonce",
+    "avoid": "À éviter",
+    "conditions": {
+      "new": "Plutôt neuf",
+      "used": "L'occasion convient",
+      "any": "Neuf ou occasion"
+    },
+    "results": {
+      "title": "Meilleures offres trouvées",
+      "searching": "Je cherche de vraies offres…",
+      "searchingHint": "Recherche sur eBay et sur le web, vérification des prix, puis tri selon ton besoin. Ça peut prendre 30 secondes.",
+      "fit": {
+        "great": "Idéal",
+        "good": "Bon choix",
+        "partial": "Partiel"
+      },
+      "priceUnknown": "prix à vérifier",
+      "verified": "prix vérifié",
+      "openInPrixly": "Analyser dans Prixly",
+      "others": "{n} autre offre | {n} autres offres",
+      "none": "Aucune offre trouvée. Essaie une des recherches ci-dessus ou précise ton besoin.",
+      "noSources": "Pour de vrais résultats, configure les clés eBay ou une clé Groq (LLM_API_KEY) avec le modèle par défaut.",
+      "ebayError": "eBay n'a pas répondu, résultats incomplets.",
+      "webError": "La recherche web n'a pas répondu, résultats incomplets.",
+      "unranked": "Le tri par l'IA a échoué : voici les offres trouvées, sans classement.",
+      "retry": "Relancer la recherche",
+      "webQuota": "Quota gratuit de recherche web (Groq) atteint pour aujourd'hui : résultats incomplets. Ajoute les clés eBay pour avoir des annonces quand même."
+    }
+  },
+  "duration": {
+    "seconds": "{n} s",
+    "minutes": "{n} min",
+    "hours": "{n} h"
+  },
+  "errors": {
+    "accessRequired": "Code d'accès requis.",
+    "wrongCode": "Code incorrect.",
+    "unknownProduct": "Produit inconnu.",
+    "invalidId": "Identifiant invalide.",
+    "invalidBody": "Requête invalide.",
+    "invalidTarget": "Prix cible invalide.",
+    "tooManyWatches": "Tu suis déjà {max} produits : arrête d'en suivre un pour en ajouter un autre.",
+    "pasteLink": "Colle un lien Amazon ou AliExpress.",
+    "amazonOnly": "La comparaison entre pays n'existe que pour Amazon.",
+    "invalidSubscription": "Abonnement push invalide.",
+    "endpointRefused": "Endpoint push refusé.",
+    "pushNotConfigured": "Notifications non configurées sur le serveur (clés VAPID manquantes).",
+    "noDevice": "Aucun appareil abonné aux notifications.",
+    "rateLimitDaily": "Limite quotidienne atteinte pour cette action. Réessaie demain.",
+    "rateLimit": "Trop de requêtes. Réessaie dans {delay}.",
+    "searchInvalid": "Recherche vide ou trop longue.",
+    "ebayDown": "eBay ne répond pas pour le moment.",
+    "ebayQuota": "Quota quotidien de l'API eBay atteint. Réessaie demain.",
+    "curateDisabled": "Le tri par l'IA n'est pas activé.",
+    "assistantDisabled": "L'assistant n'est pas activé.",
+    "needTooLong": "Décris ton besoin en {max} caractères au plus.",
+    "answerTooLong": "Précision trop longue.",
+    "ai": {
+      "unavailable": "L'IA est indisponible pour le moment.",
+      "busy": "L'IA est très demandée. Réessaie dans une minute.",
+      "failed": "L'IA n'a pas pu répondre. Réessaie plus tard.",
+      "refused": "L'IA n'a pas pu traiter cette demande.",
+      "quota": "Quota gratuit de l'IA atteint pour aujourd'hui. Réessaie demain."
+    },
+    "extract": {
+      "unsupported": "Ce lien ne correspond pas à un produit Amazon ou AliExpress reconnu.",
+      "no_link": "Aucun lien trouvé dans le texte partagé.",
+      "not_found": "Produit introuvable sur {platform}.",
+      "blocked": "{platform} demande une vérification anti-robot : réessaie dans quelques minutes.",
+      "parse": "Impossible de lire la page {platform}.",
+      "network": "{platform} ne répond pas pour le moment.",
+      "follow_failed": "Impossible de suivre le lien partagé."
+    }
+  },
+  "alerts": {
+    "lowest": "plus bas relevé",
+    "belowTarget": "sous ta cible de {target}",
+    "shippingIncluded": "(port compris)",
+    "testBody": "Les alertes de prix fonctionnent sur cet appareil."
+  }
+}

@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import type { ProductWithStats } from '~~/server/utils/products'
 
+const { t } = useI18n()
 const { loading, error, lookup } = useLookup()
 const { data } = await useFetch<{ watched: ProductWithStats[], watchedTotal: number, recent: ProductWithStats[] }>('/api/home', {
   default: () => ({ watched: [], watchedTotal: 0, recent: [] }),
 })
 
-// Un lien part à l'analyse ; un texte sans lien est une recherche sur toutes les plateformes
 function submit(input: string) {
   if (looksLikeLink(input)) return lookup(input)
-  return navigateTo({ path: '/recherche', query: { q: input } })
+  return navigateTo({ path: '/search', query: { q: input } })
 }
 
 const hasItems = computed(() => data.value.watched.length > 0 || data.value.recent.length > 0)
@@ -17,18 +17,16 @@ const hasItems = computed(() => data.value.watched.length > 0 || data.value.rece
 
 <template>
   <section class="hero">
-    <h1>Le vrai prix, avant d'acheter.</h1>
+    <h1>{{ t('home.title') }}</h1>
     <p class="lead">
-      Prixly calcule ce que te coûte vraiment un produit Amazon ou AliExpress
-      (prix, frais de port et délai de livraison) et te prévient quand il baisse.
-      Tu cherches un produit sans savoir où ? Tape son nom.
+      {{ t('home.lead') }}
     </p>
     <LinkForm :loading="loading" @submit="submit" />
     <p v-if="error" class="alert" role="alert">
       {{ error }}
     </p>
     <p class="platforms small muted">
-      Fonctionne avec
+      {{ t('home.worksWith') }}
       <span class="badge" data-platform="amazon">Amazon</span>
       <span class="badge" data-platform="aliexpress">AliExpress</span>
     </p>
@@ -37,27 +35,27 @@ const hasItems = computed(() => data.value.watched.length > 0 || data.value.rece
   <template v-if="hasItems">
     <section v-if="data.watched.length" class="home-section">
       <div class="section-header">
-        <h2>Mes suivis</h2>
-        <NuxtLink v-if="data.watchedTotal > data.watched.length" to="/suivis" class="section-link">
-          Tout voir ({{ data.watchedTotal }})
+        <h2>{{ t('home.myWatched') }}</h2>
+        <NuxtLink v-if="data.watchedTotal > data.watched.length" to="/watched" class="section-link">
+          {{ t('home.seeAll', { n: data.watchedTotal }) }}
         </NuxtLink>
       </div>
       <ProductList :products="data.watched" />
     </section>
 
     <section v-if="data.recent.length" class="home-section">
-      <h2>Consultés récemment</h2>
+      <h2>{{ t('home.recent') }}</h2>
       <ProductList :products="data.recent" />
     </section>
 
     <details class="home-section how">
-      <summary>Comment ça marche ?</summary>
+      <summary>{{ t('home.howItWorksQuestion') }}</summary>
       <HowItWorks />
     </details>
   </template>
 
   <section v-else class="home-section">
-    <h2>Comment ça marche</h2>
+    <h2>{{ t('home.howItWorks') }}</h2>
     <HowItWorks />
   </section>
 

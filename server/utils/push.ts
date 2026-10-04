@@ -5,10 +5,8 @@ import { pushSubscriptions } from '../database/schema'
 export interface PushPayload {
   title: string
   body: string
-  /** Page ouverte au tap sur la notification */
   url: string
   image?: string | null
-  /** Une notification par produit : la suivante remplace la précédente */
   tag?: string
 }
 
@@ -19,7 +17,7 @@ export function pushEnabled(): boolean {
   const { vapidPublicKey, vapidPrivateKey, vapidSubject } = useRuntimeConfig()
   configured = Boolean(vapidPublicKey && vapidPrivateKey)
   if (configured) webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey)
-  else console.warn('[push] NUXT_VAPID_PUBLIC_KEY / NUXT_VAPID_PRIVATE_KEY absents : notifications désactivées')
+  else console.warn('[push] NUXT_VAPID_PUBLIC_KEY / NUXT_VAPID_PRIVATE_KEY missing: notifications disabled')
   return configured
 }
 
@@ -41,11 +39,6 @@ export async function countSubscriptions(subscriberId: number): Promise<number> 
   return (await db.select({ n: sql<number>`count(*)` }).from(pushSubscriptions).where(eq(pushSubscriptions.subscriberId, subscriberId)).get())?.n ?? 0
 }
 
-/**
- * Envoie une notification à tous les appareils d'un abonné.
- * Les abonnements expirés (404 / 410 : appli désinstallée, permission retirée) sont supprimés.
- * Renvoie le nombre d'envois réussis.
- */
 export async function sendToSubscriber(subscriberId: number, payload: PushPayload): Promise<number> {
   if (!pushEnabled()) return 0
   const db = await useDb()
@@ -66,7 +59,7 @@ export async function sendToSubscriber(subscriberId: number, payload: PushPayloa
         await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, s.id)).run()
       }
       else {
-        console.warn(`[push] échec d'envoi à l'abonnement #${s.id} : ${(err as Error).message}`)
+        console.warn(`[push] failed to send to subscription #${s.id}: ${(err as Error).message}`)
       }
     }
   }))

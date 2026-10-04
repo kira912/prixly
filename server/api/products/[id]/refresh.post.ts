@@ -1,12 +1,15 @@
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'))
-  if (!Number.isInteger(id)) throw createError({ statusCode: 400, message: 'Identifiant invalide.' })
+  if (!Number.isInteger(id)) throw localizedError(event, 400, 'errors.invalidId')
   await enforceRateLimit(event, 'refresh')
 
+  let product
   try {
-    return { product: await refreshProduct(id) }
+    product = await refreshProduct(id)
   }
   catch (err) {
-    throw toHttpError(err)
+    throw toHttpError(event, err)
   }
+  if (!product) throw localizedError(event, 404, 'errors.unknownProduct')
+  return { product }
 })

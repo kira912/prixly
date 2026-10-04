@@ -1,39 +1,45 @@
 <script setup lang="ts">
-// Explique comment obtenir Prixly dans la feuille de partage, selon l'appareil ; masqué une fois l'appli installée
+const { t } = useI18n()
 const { standalone, platform, canPrompt, install } = useInstall()
 </script>
 
 <template>
   <aside v-if="!standalone" class="callout">
     <template v-if="platform === 'android'">
-      <h2>Partage directement depuis Amazon</h2>
-      <p>
-        Installe Prixly : il apparaîtra dans le menu <strong>Partager</strong> des applis Amazon et AliExpress.
-      </p>
+      <h2>{{ t('install.androidTitle') }}</h2>
+      <i18n-t keypath="install.androidText" tag="p" scope="global">
+        <template #share>
+          <strong>{{ t('install.share') }}</strong>
+        </template>
+      </i18n-t>
       <button v-if="canPrompt" class="btn btn-primary" @click="install">
-        Installer Prixly
+        {{ t('install.installButton') }}
       </button>
-      <p v-else class="muted small">
-        Dans Chrome : menu ⋮ → <strong>Installer l'application</strong> (pas « Ajouter à l'écran d'accueil »).
-      </p>
+      <i18n-t v-else keypath="install.chromeHint" tag="p" class="muted small" scope="global">
+        <template #action>
+          <strong>{{ t('install.chromeAction') }}</strong>
+        </template>
+      </i18n-t>
     </template>
 
     <template v-else-if="platform === 'ios'">
-      <h2>Sur iPhone</h2>
-      <p>
-        iOS ne permet pas le partage vers une appli web : copie le lien du produit et colle-le ici.
-        Pour recevoir les alertes de prix, ajoute Prixly à l'écran d'accueil (Partager → <strong>Sur l'écran d'accueil</strong>).
-      </p>
+      <h2>{{ t('install.iosTitle') }}</h2>
+      <i18n-t keypath="install.iosText" tag="p" scope="global">
+        <template #action>
+          <strong>{{ t('install.iosAction') }}</strong>
+        </template>
+      </i18n-t>
     </template>
 
     <template v-else>
-      <h2>Sur ton téléphone Android</h2>
-      <p>
-        Ouvre Prixly dans Chrome et installe-le : il apparaîtra dans le menu <strong>Partager</strong> des applis Amazon et AliExpress.
-        Sur ordinateur, colle simplement le lien.
-      </p>
+      <h2>{{ t('install.desktopTitle') }}</h2>
+      <i18n-t keypath="install.desktopText" tag="p" scope="global">
+        <template #share>
+          <strong>{{ t('install.share') }}</strong>
+        </template>
+      </i18n-t>
       <button v-if="canPrompt" class="btn btn-ghost" @click="install">
-        Installer sur cet ordinateur
+        {{ t('install.installDesktop') }}
       </button>
     </template>
   </aside>

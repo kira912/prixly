@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { looksLikeLink, searchLinks } from '../app/utils/search'
 
 describe('searchLinks', () => {
-  it('encode la recherche pour chaque plateforme', () => {
+  it('encodes the search for each platform', () => {
     const links = searchLinks('  machine à pain  ')
     expect(links.find(l => l.id === 'amazon')?.href).toBe('https://www.amazon.fr/s?k=machine%20%C3%A0%20pain')
     expect(links.find(l => l.id === 'aliexpress')?.href).toBe('https://fr.aliexpress.com/w/wholesale-machine-%C3%A0-pain.html')
@@ -10,7 +10,7 @@ describe('searchLinks', () => {
     expect(links.find(l => l.id === 'leboncoin')?.href).toBe('https://www.leboncoin.fr/recherche?text=machine%20%C3%A0%20pain')
   })
 
-  it('n\'injecte rien dans l\'URL', () => {
+  it('doesn\'t inject anything into the URL', () => {
     for (const l of searchLinks('a&b=c/../#x?y')) {
       expect(new URL(l.href).hash).toBe('')
       expect(l.href).not.toContain('&b=c')
@@ -18,12 +18,12 @@ describe('searchLinks', () => {
     }
   })
 
-  it('filtre neuf / occasion', () => {
+  it('filters new / used', () => {
     expect(searchLinks('vélo', 'used').every(l => l.kind === 'used')).toBe(true)
     expect(searchLinks('vélo', 'new').some(l => l.id === 'leboncoin')).toBe(false)
   })
 
-  it('ne renvoie rien pour une recherche vide', () => {
+  it('returns nothing for an empty search', () => {
     expect(searchLinks('   ')).toEqual([])
   })
 })
@@ -33,11 +33,11 @@ describe('looksLikeLink', () => {
     'https://amzn.eu/d/abc',
     'Regarde ! https://a.aliexpress.com/_xyz',
     'amazon.fr/dp/B06VW5BH2K',
-  ])('lien : %s', (input) => {
+  ])('link: %s', (input) => {
     expect(looksLikeLink(input)).toBe(true)
   })
 
-  it.each(['machine à pain moulinex', 'iPhone 13 128 Go', 'amazon basics câble'])('recherche : %s', (input) => {
+  it.each(['machine à pain moulinex', 'iPhone 13 128 Go', 'amazon basics câble'])('search: %s', (input) => {
     expect(looksLikeLink(input)).toBe(false)
   })
 })

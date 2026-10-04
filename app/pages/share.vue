@@ -1,6 +1,5 @@
 <script setup lang="ts">
-// Cible du Web Share Target (voir manifest.share_target dans nuxt.config.ts).
-// Android envoie ?title=…&text=…&url=… ; selon l'appli, le lien arrive dans url ou dans text.
+const { t } = useI18n()
 const route = useRoute()
 const { loading, error, lookup } = useLookup()
 
@@ -11,8 +10,7 @@ const shared = computed(() => {
 
 onMounted(() => {
   if (!shared.value) return
-  // Texte partagé sans lien (nom d'un produit, résultat Google Lens…) : on le cherche partout
-  if (!looksLikeLink(shared.value)) return navigateTo({ path: '/recherche', query: { q: shared.value } }, { replace: true })
+  if (!looksLikeLink(shared.value)) return navigateTo({ path: '/search', query: { q: shared.value } }, { replace: true })
   lookup(shared.value, { replace: true })
 })
 </script>
@@ -20,14 +18,14 @@ onMounted(() => {
 <template>
   <section class="hero">
     <template v-if="!shared">
-      <h1>Rien à analyser</h1>
+      <h1>{{ t('share.nothingTitle') }}</h1>
       <p class="muted">
-        Aucun lien n'a été reçu.
+        {{ t('share.nothingText') }}
       </p>
       <LinkForm :loading="loading" @submit="lookup" />
     </template>
     <template v-else-if="error">
-      <h1>Impossible d'analyser ce lien</h1>
+      <h1>{{ t('share.errorTitle') }}</h1>
       <p class="alert" role="alert">
         {{ error }}
       </p>
@@ -36,16 +34,16 @@ onMounted(() => {
       </p>
       <div class="actions">
         <button class="btn btn-primary" @click="lookup(shared, { replace: true })">
-          Réessayer
+          {{ t('common.retry') }}
         </button>
         <NuxtLink to="/" class="btn btn-ghost">
-          Accueil
+          {{ t('common.home') }}
         </NuxtLink>
       </div>
     </template>
     <div v-else class="loading-state" aria-live="polite">
       <div class="spinner" />
-      <p>Analyse du produit…</p>
+      <p>{{ t('share.analyzing') }}</p>
     </div>
   </section>
 </template>

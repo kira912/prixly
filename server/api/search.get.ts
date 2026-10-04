@@ -1,28 +1,22 @@
-import { EbayError, type EbayCondition, type EbaySort } from '../lib/ebay'
+import { EbayError } from '../lib/ebay'
 
-/** Vraies annonces pour une recherche (eBay pour l'instant). Sans clés eBay, répond configured: false et la page se contente des liens. */
 export default defineEventHandler(async (event) => {
-  const { q, condition, sort } = getQuery(event)
-  const query = typeof q === 'string' ? q.trim() : ''
-  if (!query || query.length > 200) throw createError({ statusCode: 400, message: 'Recherche vide ou trop longue.' })
+  const { query, condition, sort } = searchParams(getQuery(event))
+  if (!query || query.length > 200) throw localizedError(event, 400, 'errors.searchInvalid')
 
   const credentials = ebayCredentials()
   if (!credentials) return { configured: false, assistant: false, total: 0, items: [] }
 
   await enforceRateLimit(event, 'search')
   try {
-    const result = await cachedEbaySearch(credentials, query, {
-      condition: condition === 'new' || condition === 'used' ? condition as EbayCondition : undefined,
-      sort: sort === 'price' ? sort as EbaySort : undefined,
-    })
-    return { configured: true, assistant: Boolean(useRuntimeConfig().anthropicApiKey), ...result }
+    const result = await cachedEbaySearch(credentials, query, { condition, sort, locale: eventLocale(event) })
+    return { configured: true, assistant: useLlm().enabled, ...result }
   }
   catch (err) {
     if (err instanceof EbayError) {
-      // Clés invalides : le détail sert à l'admin, pas à l'utilisateur
       if (err.status === 401) console.error('[search]', err.message)
-      throw createError({ statusCode: 502, message: err.status === 429 ? err.message : 'eBay ne répond pas pour le moment.' })
+      throw localizedError(event, 502, err.status === 429 ? 'errors.ebayQuota' : 'errors.ebayDown')
     }
-    throw createError({ statusCode: 502, message: 'eBay ne répond pas pour le moment.' })
+    throw localizedError(event, 502, 'errors.ebayDown')
   }
 })

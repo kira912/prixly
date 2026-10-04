@@ -2,7 +2,6 @@ import { and, eq, isNotNull, lt, or, isNull, gt } from 'drizzle-orm'
 import { kv } from '../database/schema'
 import type { CounterStorage } from '../lib/rate-limit'
 
-/** Valeur d'une clé, ou null si absente ou expirée. */
 export async function kvGet<T>(key: string): Promise<T | null> {
   const db = await useDb()
   const row = await db.select({ value: kv.value }).from(kv)
@@ -22,10 +21,6 @@ export async function kvDelete(key: string) {
   await db.delete(kv).where(eq(kv.key, key)).run()
 }
 
-/**
- * Prend la clé si elle est libre (absente ou expirée) : verrou partagé entre instances.
- * Renvoie false si quelqu'un la tient déjà.
- */
 export async function kvAcquire(key: string, ttlSec: number): Promise<boolean> {
   const db = await useDb()
   const now = new Date()
@@ -37,13 +32,11 @@ export async function kvAcquire(key: string, ttlSec: number): Promise<boolean> {
   return rows.length > 0
 }
 
-/** Supprime les clés expirées (compteurs anti-abus surtout) ; appelé par le relevé planifié. */
 export async function kvPurgeExpired() {
   const db = await useDb()
   await db.delete(kv).where(and(isNotNull(kv.expiresAt), lt(kv.expiresAt, new Date()))).run()
 }
 
-/** Adaptateur pour lib/rate-limit : les compteurs vivent en base, communs à toutes les instances. */
 export const kvCounterStorage: CounterStorage = {
   getItem: key => kvGet(key),
   setItem: (key, value, opts) => kvSet(key, value, { ttlSec: opts?.ttl }),

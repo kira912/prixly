@@ -10,15 +10,13 @@ describe('parseAmazonHtml', () => {
   const ref = { platform: 'amazon' as const, externalId: 'B06VW5BH2K', url: 'https://www.amazon.fr/dp/B06VW5BH2K' }
   const html = fixture('amazon-B06VW5BH2K.html.gz')
 
-  it('extrait les infos produit', () => {
+  it('extracts product info', () => {
     const p = parseAmazonHtml(html, ref, new Date(2026, 8, 29))
     expect(p).toMatchObject({
       ...ref,
       title: 'DURACELL 2032 Piles Boutons au Lithium (Lot de 8) 3V, CR2032',
       currency: 'EUR',
-      // Achat ponctuel, pas le prix « abonnez-vous » (10,19 €)
       priceCents: 1199,
-      // « Prix unique » barré = offre sans abonnement, hors du bloc prix principal : pas un prix barré
       listPriceCents: null,
       shippingCents: 0,
       deliveryText: 'vendredi 2 octobre',
@@ -30,7 +28,7 @@ describe('parseAmazonHtml', () => {
     expect(p.image).toMatch(/^https:\/\/m\.media-amazon\.com\/images\/I\//)
   })
 
-  it('lit le prix barré du bloc prix principal', () => {
+  it('reads the list price from the main price block', () => {
     const page = `<span id="productTitle">Produit</span>
       <div id="corePriceDisplay_desktop_feature_div">
         <span class="a-price apex-pricetopay-value"><span class="a-offscreen">14,99 €</span></span>
@@ -39,8 +37,8 @@ describe('parseAmazonHtml', () => {
     expect(parseAmazonHtml(page, ref)).toMatchObject({ priceCents: 1499, listPriceCents: 2499 })
   })
 
-  it('échoue proprement sur une page sans produit', () => {
-    expect(() => parseAmazonHtml('<html><body>Page introuvable</body></html>', ref)).toThrow(/Titre/)
+  it('fails cleanly on a page without a product', () => {
+    expect(() => parseAmazonHtml('<html><body>Page introuvable</body></html>', ref)).toThrow(/title not found/)
   })
 })
 
@@ -48,14 +46,13 @@ describe('parseAliExpressResult', () => {
   const ref = { platform: 'aliexpress' as const, externalId: '1005009561948552', url: 'https://fr.aliexpress.com/item/1005009561948552.html' }
   const result = JSON.parse(fixture('aliexpress-1005009561948552.json.gz')).data.result
 
-  it('extrait prix, livraison et délai', () => {
+  it('extracts price, shipping and delivery time', () => {
     const p = parseAliExpressResult(result, ref)
     expect(p).toMatchObject({
       ...ref,
       title: expect.stringContaining('Câble de charge USB Type C'),
       currency: 'EUR',
       priceCents: 247,
-      // Prix d'origine = prix de vente : pas de remise
       listPriceCents: null,
       shippingCents: 199,
       deliveryMinDays: 4,
@@ -64,17 +61,17 @@ describe('parseAliExpressResult', () => {
       rating: 4.5,
       reviewCount: 7624,
     })
-    expect(p.shippingNote).toBe('AliExpress Selection Standard · gratuite dès 10,00€ d\'achat · expédié depuis Chine')
+    expect(p).toMatchObject({ shippingNote: 'AliExpress Selection Standard', freeShippingOver: '10,00€', shipsFrom: 'CN' })
     expect(p.image).toMatch(/^https:\/\/ae-pic-a1\.aliexpress-media\.com\//)
   })
 
-  it('lit le prix avant remise', () => {
+  it('reads the price before discount', () => {
     const discounted = structuredClone(result)
     discounted.GLOBAL_DATA.globalData.eventInfo.clcEvent.originalPriceCent = 499
     expect(parseAliExpressResult(discounted, ref).listPriceCents).toBe(499)
   })
 
-  it('signale un produit introuvable', () => {
-    expect(() => parseAliExpressResult({}, ref)).toThrow(/introuvable/)
+  it('reports a missing product', () => {
+    expect(() => parseAliExpressResult({}, ref)).toThrow(/not found/)
   })
 })

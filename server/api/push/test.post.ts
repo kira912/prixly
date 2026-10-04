@@ -1,10 +1,10 @@
 export default defineEventHandler(async (event) => {
   await enforceRateLimit(event, 'pushTest')
-  if (!pushEnabled()) throw createError({ statusCode: 503, message: 'Notifications non configurées sur le serveur (clés VAPID manquantes).' })
+  if (!pushEnabled()) throw localizedError(event, 503, 'errors.pushNotConfigured')
   const subscriberId = await getSubscriberId(event)
   const sent = subscriberId
-    ? await sendToSubscriber(subscriberId, { title: 'Prixly', body: 'Les alertes de prix fonctionnent sur cet appareil.', url: '/', tag: 'test' })
+    ? await sendToSubscriber(subscriberId, { title: 'Prixly', body: useServerT(event)('alerts.testBody'), url: '/', tag: 'test' })
     : 0
-  if (!sent) throw createError({ statusCode: 404, message: 'Aucun appareil abonné aux notifications.' })
+  if (!sent) throw localizedError(event, 404, 'errors.noDevice')
   return { sent }
 })

@@ -3,6 +3,6 @@ export default defineEventHandler(async (event) => {
   await enforceRateLimit(event, 'login')
   const body = await readBody<{ code?: unknown }>(event)
   const code = typeof body?.code === 'string' ? body.code.trim() : ''
-  if (!grantAccess(event, code)) throw createError({ statusCode: 401, message: 'Code incorrect.' })
+  if (!grantAccess(event, code)) throw localizedError(event, 401, 'errors.wrongCode')
   return { ok: true }
 })

@@ -8,9 +8,10 @@ export interface ChartPoint {
 const props = defineProps<{
   points: ChartPoint[]
   currency: string
-  /** Fin de l'axe X : dernier relevé connu (sinon la fin du dernier palier) */
   end?: string | Date | null
 }>()
+
+const { t: translate } = useI18n()
 
 const HEIGHT = 200
 const PAD = { top: 16, right: 16, bottom: 28, left: 56 }
@@ -35,7 +36,6 @@ const domain = computed(() => {
   const totals = props.points.map(p => p.totalCents).filter((v): v is number => v != null)
   const min = Math.min(...totals)
   const max = Math.max(...totals)
-  // Graduations « rondes » (pas de 1, 2 ou 5 × 10^n) encadrant les prix, pour ~3 lignes de grille
   const span = max === min ? Math.max(min * 0.2, 100) : max - min
   const raw = span / 2
   const mag = 10 ** Math.floor(Math.log10(raw))
@@ -53,7 +53,6 @@ const plotH = HEIGHT - PAD.top - PAD.bottom
 const x = (ms: number) => PAD.left + ((ms - domain.value.start) / (domain.value.end - domain.value.start)) * plotW.value
 const y = (cents: number) => PAD.top + (1 - (cents - domain.value.lo) / (domain.value.hi - domain.value.lo)) * plotH
 
-/** Paliers avec leurs coordonnées ; un total null (indisponible) interrompt la ligne. */
 const steps = computed(() => props.points.map((p, i) => {
   const next = props.points[i + 1]
   const x0 = x(t(p.at))
@@ -84,10 +83,9 @@ const ticks = computed(() => {
 })
 
 const money = (c: number | null) => formatMoney(c, props.currency)
-const shortDate = (d: string | Date | number) => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
-const longDate = (d: string | Date | number) => new Date(d).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+const shortDate = (d: string | Date | number) => new Date(d).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' })
+const longDate = (d: string | Date | number) => formatDate(d, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
-// Survol : le réticule suit le pointeur et se cale sur le palier sous l'axe X
 const active = ref<number | null>(null)
 function onPointer(e: PointerEvent) {
   const rect = (e.currentTarget as SVGElement).getBoundingClientRect()
@@ -112,7 +110,7 @@ const last = computed(() => steps.value.at(-1)!)
       :height="HEIGHT"
       :viewBox="`0 0 ${width} ${HEIGHT}`"
       role="img"
-      :aria-label="`Évolution du prix total, de ${money(points[0]!.totalCents)} à ${money(last.totalCents)}`"
+      :aria-label="translate('chart.label', { from: money(points[0]!.totalCents), to: money(last.totalCents) })"
       tabindex="0"
       @pointermove="onPointer"
       @pointerleave="active = null"
@@ -131,7 +129,6 @@ const last = computed(() => steps.value.at(-1)!)
 
       <path class="chart-line" :d="path" />
 
-      <!-- Un repère à chaque changement de prix -->
       <template v-for="(s, i) in steps" :key="i">
         <circle v-if="s.y != null" class="chart-dot" :cx="s.x0" :cy="s.y" r="4" />
       </template>
@@ -147,7 +144,7 @@ const last = computed(() => steps.value.at(-1)!)
       class="chart-tooltip"
       :style="{ left: `${Math.min(Math.max(activeStep.x0, 90), width - 90)}px` }"
     >
-      <strong>{{ activeStep.totalCents == null ? 'Indisponible' : money(activeStep.totalCents) }}</strong>
+      <strong>{{ activeStep.totalCents == null ? translate('common.unavailable') : money(activeStep.totalCents) }}</strong>
       <span>{{ longDate(activeStep.at) }}</span>
     </div>
   </figure>

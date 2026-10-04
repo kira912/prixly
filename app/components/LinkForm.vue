@@ -2,6 +2,7 @@
 const emit = defineEmits<{ submit: [input: string] }>()
 defineProps<{ loading?: boolean }>()
 
+const { t } = useI18n()
 const input = ref('')
 
 async function pasteFromClipboard() {
@@ -9,7 +10,6 @@ async function pasteFromClipboard() {
     input.value = await navigator.clipboard.readText()
   }
   catch {
-    // Permission refusée : l'utilisateur collera à la main
   }
 }
 
@@ -20,22 +20,22 @@ function onSubmit() {
 
 <template>
   <form class="link-form" @submit.prevent="onSubmit">
-    <label for="link" class="sr-only">Lien ou nom du produit</label>
+    <label for="link" class="sr-only">{{ t('linkForm.label') }}</label>
     <textarea
       id="link"
       v-model="input"
       rows="2"
-      placeholder="Colle un lien Amazon ou AliExpress, ou cherche un produit…"
+      :placeholder="t('linkForm.placeholder')"
       autocomplete="off"
       :disabled="loading"
       @keydown.enter.exact.prevent="onSubmit"
     />
     <div class="link-form-actions">
       <button type="button" class="btn btn-ghost" :disabled="loading" @click="pasteFromClipboard">
-        Coller
+        {{ t('linkForm.paste') }}
       </button>
       <button type="submit" class="btn btn-primary" :disabled="loading || !input.trim()">
-        {{ loading ? 'Analyse…' : 'Valider' }}
+        {{ loading ? t('linkForm.analyzing') : t('linkForm.submit') }}
       </button>
     </div>
   </form>

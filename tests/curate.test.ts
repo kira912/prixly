@@ -16,11 +16,11 @@ const items = [
 ]
 
 describe('curationPrompt', () => {
-  it('numérote les annonces avec le prix port compris', () => {
+  it('numbers listings with the price shipping included', () => {
     const prompt = curationPrompt(' iphone 13 ', [items[0]!, item('x', 'Lot', 1000, 250, { auction: true, condition: null })])
-    expect(prompt).toContain('Recherche : « iphone 13 »')
-    expect(prompt).toContain('[0] iPhone 13 128 Go bleu | 425.00 EUR port compris | Occasion')
-    expect(prompt).toContain('[1] Lot | 12.50 EUR port compris | enchère')
+    expect(prompt).toContain('Search: "iphone 13"')
+    expect(prompt).toContain('[0] iPhone 13 128 Go bleu | 425.00 EUR shipping included | Occasion')
+    expect(prompt).toContain('[1] Lot | 12.50 EUR shipping included | auction')
   })
 })
 
@@ -35,7 +35,7 @@ describe('applyCuration', () => {
     ],
   })
 
-  it('regroupe par produit, du groupe le plus fourni au moins fourni, moins cher en tête', () => {
+  it('groups by product, largest group first, cheapest first', () => {
     const { groups } = applyCuration(items, output)
     expect(groups.map(g => g.label)).toEqual(['iPhone 13 · 128 Go', 'iPhone 13 · 256 Go'])
     expect(groups[0]!.entries.map(e => e.item.id)).toEqual(['c', 'a'])
@@ -43,18 +43,18 @@ describe('applyCuration', () => {
     expect(groups[0]!.entries[0]!.note).toBe('batterie 89 %')
   })
 
-  it('écarte accessoires et pièces avec leur raison', () => {
+  it('sets aside accessories and parts with their reason', () => {
     const { hidden } = applyCuration(items, output)
     expect(hidden.map(h => [h.item.id, h.kind])).toEqual([['b', 'accessory'], ['e', 'for_parts']])
   })
 
-  it('calcule le prix à l\'unité d\'un lot', () => {
+  it('computes the unit price of a lot', () => {
     const lot = [item('p', 'Piles CR2032 x8', 1200, 400)]
     const { groups } = applyCuration(lot, { items: [{ n: 0, kind: 'product', group: 'CR2032', units: 8, note: '' }] })
     expect(groups[0]!.entries[0]).toMatchObject({ units: 8, unitTotalCents: 200 })
   })
 
-  it('ignore les numéros inventés ou en double, garde les oubliées à part', () => {
+  it('ignores made-up or duplicate numbers, keeps forgotten ones apart', () => {
     const result = applyCuration(items.slice(0, 3), {
       items: [
         { n: 0, kind: 'product', group: 'iPhone 13', units: 1, note: '' },
