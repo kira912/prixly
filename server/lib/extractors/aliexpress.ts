@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { browserFetch } from '../http'
+import { browserFetch, cookieJar } from '../http'
 import { parseCount, parsePrice, parseRating } from '../parse'
 import { ExtractError, type ProductInfo, type ProductRef } from '../types'
 
@@ -7,10 +7,11 @@ const MTOP_API = 'mtop.aliexpress.pdp.pc.query'
 const MTOP_APP_KEY = '12574478'
 const LOCALE = { lang: 'fr_FR', currency: 'EUR', country: 'FR', site: 'fra' }
 
-let cookieJar = ''
+const MTOP_URL = `https://acs.aliexpress.com/h5/${MTOP_API}/1.0/`
 
-function tokenFromCookies(cookies: string): string {
-  return cookies.match(/_m_h5_tk=([^_;]+)/)?.[1] ?? ''
+// The signing token comes back as a cookie (shared jar, so it survives between requests)
+function mtopToken(): string {
+  return cookieJar.get(MTOP_URL, '_m_h5_tk')?.split('_')[0] ?? ''
 }
 
 async function mtopCall(productId: string, fetchImpl: typeof fetch): Promise<{ ret: string[], data: any }> {
@@ -29,28 +30,18 @@ async function mtopCall(productId: string, fetchImpl: typeof fetch): Promise<{ r
     ext: JSON.stringify({ foreignChannel: 'SEO', fromSysForeign: true, site: LOCALE.site, lang: LOCALE.lang, currency: LOCALE.currency, crawler: false, x_object_id: productId }),
   })
   const t = Date.now().toString()
-  const sign = createHash('md5').update(`${tokenFromCookies(cookieJar)}&${t}&${MTOP_APP_KEY}&${data}`).digest('hex')
+  const sign = createHash('md5').update(`${mtopToken()}&${t}&${MTOP_APP_KEY}&${data}`).digest('hex')
   const query = new URLSearchParams({ jsv: '2.5.1', appKey: MTOP_APP_KEY, t, sign, api: MTOP_API, v: '1.0', type: 'originaljson', dataType: 'json', data })
 
   let res: Response
   try {
-    res = await fetchImpl(`https://acs.aliexpress.com/h5/${MTOP_API}/1.0/?${query}`, {
-      headers: { 'accept': 'application/json', 'referer': 'https://fr.aliexpress.com/', 'cookie': cookieJar },
+    res = await fetchImpl(`${MTOP_URL}?${query}`, {
+      headers: { 'accept': 'application/json', 'referer': 'https://fr.aliexpress.com/', 'sec-fetch-site': 'same-site', 'sec-fetch-mode': 'cors', 'sec-fetch-dest': 'empty' },
       signal: AbortSignal.timeout(15_000),
     })
   }
   catch (err) {
     throw new ExtractError('network', `Request to AliExpress failed (${(err as Error).message})`, { platform: 'AliExpress' })
-  }
-
-  const set = res.headers.getSetCookie?.() ?? []
-  if (set.length) {
-    const jar = new Map(cookieJar.split('; ').filter(Boolean).map(c => [c.split('=')[0], c] as const))
-    for (const c of set) {
-      const pair = c.split(';')[0]!
-      jar.set(pair.split('=')[0], pair)
-    }
-    cookieJar = [...jar.values()].join('; ')
   }
 
   const json = await res.json().catch(() => null) as { ret?: string[], data?: any } | null

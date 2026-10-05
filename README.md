@@ -30,6 +30,9 @@ Variables utiles : `NUXT_DB_URL` (`file:./data/prixly.db` par défaut, ou `libsq
 
 - Les requêtes vers Amazon / AliExpress passent par [impit](https://github.com/apify/impit), qui imite l'empreinte TLS/HTTP2 de Chrome (le `fetch` de Node se fait repérer même avec un User-Agent de navigateur). C'est un module natif : builder sur la même plateforme que la prod (attention aux images Alpine/musl ou ARM).
 - `PRIXLY_PROXY_URL` (`http://…`, `socks5://user:pass@…`) : fait passer toutes les requêtes par un proxy, résidentiel de préférence.
+- **Session de navigateur** : les cookies reçus (session Amazon, jeton mtop AliExpress, cookies de captcha passé) sont gardés et renvoyés comme le ferait un navigateur, et sauvegardés en base (`kv`, clé `http:cookies`) pour que toutes les instances partagent la même session. Si une page reste bloquée, la session du site est oubliée et la page retentée une fois, comme un nouveau visiteur.
+- **Captcha Amazon « Continuer les achats »** : la réponse est déjà dans le formulaire, il est soumis automatiquement. Le captcha à image et le challenge JavaScript AWS WAF (`202`, en-tête `x-amzn-waf-action`) ne se passent pas sans navigateur : ils comptent comme un blocage.
+- `PRIXLY_SCRAPER_URL` (ex. `https://api.scrape.do/?token=…&url={url}`) : en dernier recours, une page Amazon toujours bloquée est redemandée à une API de scraping (IP résidentielles, captchas gérés de leur côté). Appelée seulement après un blocage. Pas pour AliExpress, dont l'API signée a besoin de la session.
 - Après un captcha, la plateforme est mise en retrait pour les relevés planifiés : 8 h, puis 16 h, 32 h, 48 h max tant que ça bloque ; un relevé réussi remet le compteur à zéro (stocké en base, table `kv`, commun à toutes les instances).
 - Le relevé planifié démarre après un délai aléatoire (`PRIXLY_REFRESH_JITTER_MIN`, 20 min par défaut) et alterne les plateformes, avec 3 à 8 s entre deux requêtes.
 

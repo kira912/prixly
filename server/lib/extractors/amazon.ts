@@ -1,16 +1,71 @@
 import * as cheerio from 'cheerio'
-import { browserFetch, fetchText } from '../http'
+import { browserFetch, cookieJar, fetchText, fetchViaScraper, humanPause } from '../http'
 import { currencyFromSymbol, parseCount, parseFrenchDeliveryDays, parsePrice, parseRating } from '../parse'
 import { ExtractError, type ProductInfo, type ProductRef } from '../types'
 
+type Page = Awaited<ReturnType<typeof fetchText>>
+
 export async function extractAmazon(ref: ProductRef, fetchImpl: typeof fetch = browserFetch): Promise<ProductInfo> {
-  const { status, body } = await fetchText(ref.url, {}, fetchImpl)
-  if (status === 404) throw new ExtractError('not_found', 'Product not found on Amazon.', { platform: 'Amazon' })
-  if (status === 503 || (/validateCaptcha|captcha/i.test(body.slice(0, 20_000)) && !body.includes('id="productTitle"'))) {
-    throw new ExtractError('blocked', 'Amazon is asking for a captcha.', { platform: 'Amazon' })
+  let page = await fetchProductPage(ref.url, fetchImpl)
+
+  // A flagged session keeps getting blocked: start over as a new visitor, once
+  if (blockKind(page) && fetchImpl === browserFetch && cookieJar.getCookieString(ref.url)) {
+    cookieJar.clearSite(ref.url)
+    await humanPause(1500, 4000)
+    page = await fetchProductPage(ref.url, fetchImpl)
   }
-  if (status !== 200) throw new ExtractError('network', `Amazon responded ${status}.`, { platform: 'Amazon' })
-  return parseAmazonHtml(body, ref)
+
+  const kind = blockKind(page)
+  if (kind) {
+    const viaScraper = await fetchViaScraper(ref.url)
+    if (viaScraper && !blockKind(viaScraper)) page = viaScraper
+    else if (kind === 'challenge') throw new ExtractError('blocked', 'Amazon is asking for a JavaScript bot check.', { platform: 'Amazon' })
+    else throw new ExtractError('blocked', 'Amazon is asking for a captcha.', { platform: 'Amazon' })
+  }
+
+  if (page.status === 404) throw new ExtractError('not_found', 'Product not found on Amazon.', { platform: 'Amazon' })
+  if (page.status !== 200) throw new ExtractError('network', `Amazon responded ${page.status}.`, { platform: 'Amazon' })
+  return parseAmazonHtml(page.body, ref)
+}
+
+/** Loads the page; on the "Continue shopping" interstitial, clicks the button like a visitor would. */
+async function fetchProductPage(url: string, fetchImpl: typeof fetch): Promise<Page> {
+  const page = await fetchText(url, {}, fetchImpl)
+  if (blockKind(page) !== 'captcha') return page
+
+  const submit = continueShoppingUrl(page.body, url)
+  if (!submit) return page
+  await humanPause(1200, 3500)
+  const next = await fetchText(submit.href, { headers: { 'referer': url, 'sec-fetch-site': 'same-origin' } }, fetchImpl)
+  if (next.status === 200 && isProductPage(next.body)) return next
+  return blockKind(next) ? next : fetchText(url, {}, fetchImpl)
+}
+
+const isProductPage = (html: string) => html.includes('id="productTitle"')
+
+/** 'challenge': AWS WAF JavaScript challenge (needs a real browser); 'captcha': Amazon's own captcha page. */
+export function blockKind({ status, body, headers }: Page): 'challenge' | 'captcha' | null {
+  if (status === 404) return null
+  if (headers.get('x-amzn-waf-action') || (status === 202 && /awswaf|challenge\.js/.test(body))) return 'challenge'
+  if (status === 503 || (/validateCaptcha|captcha/i.test(body.slice(0, 20_000)) && !isProductPage(body))) return 'captcha'
+  return null
+}
+
+/**
+ * The "Cliquez sur le bouton ci-dessous pour continuer vos achats" page is a form whose answer is
+ * already filled in hidden fields: submitting it is enough. Returns null for the image captcha.
+ */
+export function continueShoppingUrl(html: string, pageUrl: string): URL | null {
+  const $ = cheerio.load(html)
+  const form = $('form[action*="validateCaptcha"]').first()
+  if (!form.length || form.find('img[src*="captcha" i], #captchacharacters').length) return null
+
+  const inputs = form.find('input[name]').toArray()
+  if (inputs.some(el => ($(el).attr('type') ?? 'text').toLowerCase() === 'text' && !$(el).attr('value'))) return null
+
+  const url = new URL(form.attr('action')!, pageUrl)
+  for (const el of inputs) url.searchParams.append($(el).attr('name')!, $(el).attr('value') ?? '')
+  return url
 }
 
 export function parseAmazonHtml(html: string, ref: ProductRef, now = new Date()): ProductInfo {

@@ -17,6 +17,7 @@ async function backoffRemainingMs(platform: Platform): Promise<number> {
 }
 
 export async function extractTracked(ref: ProductRef): Promise<ProductInfo> {
+  await restoreCookies()
   try {
     const info = await extractProduct(ref)
     await kvDelete(backoffKey(ref.platform))
@@ -29,6 +30,9 @@ export async function extractTracked(ref: ProductRef): Promise<ProductInfo> {
       console.warn(`[backoff] ${ref.platform} blocked (${strikes} times in a row), scheduled checks paused until ${new Date(until).toISOString()}`)
     }
     throw err
+  }
+  finally {
+    await persistCookies()
   }
 }
 
