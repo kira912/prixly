@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { blockKind, continueShoppingUrl } from '../server/lib/extractors/amazon'
+import { blockKind, continueShoppingUrl, deliveryCountry } from '../server/lib/extractors/amazon'
 import { CookieJar, scraperUrl } from '../server/lib/http'
 
 const page = (status: number, body: string, headers: Record<string, string> = {}) => ({ status, body, headers: new Headers(headers) })
@@ -71,5 +71,13 @@ describe('scraperUrl', () => {
     expect(scraperUrl('https://www.amazon.fr/dp/X?th=1', 'https://api.scrape.do/?token=t&url={url}'))
       .toBe('https://api.scrape.do/?token=t&url=https%3A%2F%2Fwww.amazon.fr%2Fdp%2FX%3Fth%3D1')
     expect(scraperUrl('https://a.fr', undefined)).toBeNull()
+  })
+})
+
+describe('deliveryCountry', () => {
+  it('reads the country the page was priced for', () => {
+    expect(deliveryCountry('{"buyingOptionTypes":["NEW"],"zipCode":"75001","countryCode":"FR","productAsin":"X"}')).toBe('FR')
+    expect(deliveryCountry('{"buyingOptionTypes":["NEW"],"zipCode":null,"countryCode":"US","productAsin":"X"}')).toBe('US')
+    expect(deliveryCountry('<html></html>')).toBeNull()
   })
 })

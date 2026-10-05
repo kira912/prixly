@@ -25,7 +25,61 @@ export async function extractAmazon(ref: ProductRef, fetchImpl: typeof fetch = b
 
   if (page.status === 404) throw new ExtractError('not_found', 'Product not found on Amazon.', { platform: 'Amazon' })
   if (page.status !== 200) throw new ExtractError('network', `Amazon responded ${page.status}.`, { platform: 'Amazon' })
+
+  // Prices and offers depend on the delivery address, guessed from the IP (the US on Vercel):
+  // a store that does not ship there shows a third-party offer at any price
+  const local = LOCAL_ADDRESS[new URL(ref.url).hostname]
+  const country = deliveryCountry(page.body)
+  if (fetchImpl === browserFetch && local && country && country !== local.country) {
+    if (await setDeliveryAddress(page.body, ref.url, local.location, fetchImpl)) {
+      const again = await fetchText(ref.url, {}, fetchImpl)
+      if (again.status === 200 && isProductPage(again.body)) page = again
+    }
+  }
   return parseAmazonHtml(page.body, ref)
+}
+
+// amazon.nl / amazon.com.be want a postcode with a city id: the country alone is enough there
+const LOCAL_ADDRESS: Record<string, { country: string, location: Record<string, string> }> = {
+  'www.amazon.fr': { country: 'FR', location: { locationType: 'LOCATION_INPUT', zipCode: '75001' } },
+  'www.amazon.de': { country: 'DE', location: { locationType: 'LOCATION_INPUT', zipCode: '10115' } },
+  'www.amazon.es': { country: 'ES', location: { locationType: 'LOCATION_INPUT', zipCode: '28001' } },
+  'www.amazon.it': { country: 'IT', location: { locationType: 'LOCATION_INPUT', zipCode: '00184' } },
+  'www.amazon.nl': { country: 'NL', location: { locationType: 'COUNTRY', district: 'NL', countryCode: 'NL' } },
+  'www.amazon.com.be': { country: 'BE', location: { locationType: 'COUNTRY', district: 'BE', countryCode: 'BE' } },
+}
+
+/** Country of the delivery address the page was priced for. */
+export function deliveryCountry(html: string): string | null {
+  return html.match(/"zipCode":(?:null|"[^"]*"),"countryCode":"([A-Z]{2})"/)?.[1] ?? null
+}
+
+/** Sets a local address like a visitor would with "Update location"; kept in the session cookies. */
+async function setDeliveryAddress(html: string, pageUrl: string, location: Record<string, string>, fetchImpl: typeof fetch): Promise<boolean> {
+  const { origin } = new URL(pageUrl)
+  const ajax = { 'referer': pageUrl, 'x-requested-with': 'XMLHttpRequest', 'sec-fetch-site': 'same-origin', 'sec-fetch-mode': 'cors', 'sec-fetch-dest': 'empty' }
+  try {
+    const modal = JSON.parse(cheerio.load(html)('#nav-global-location-data-modal-action').attr('data-a-modal') ?? 'null')
+    if (!modal?.url) return false
+    await humanPause(800, 2000)
+    const selections = await fetchText(new URL(modal.url, origin).href, { headers: { ...ajax, ...modal.ajaxHeaders } }, fetchImpl)
+    const csrf = selections.body.match(/CSRF_TOKEN\s*:\s*"([^"]+)"/)?.[1]
+    if (!csrf) return false
+
+    await humanPause(800, 2000)
+    const res = await fetchText(`${origin}/portal-migration/hz/glow/address-change?actionSource=glow`, {
+      method: 'POST',
+      headers: { ...ajax, 'content-type': 'application/json', 'anti-csrftoken-a2z': csrf },
+      body: JSON.stringify({ ...location, deviceType: 'web', storeContext: 'generic', pageType: 'Detail', actionSource: 'glow' }),
+    }, fetchImpl)
+    const ok = /"successful":1/.test(res.body)
+    if (!ok) console.warn(`[amazon] could not set the delivery address on ${origin} (${res.status})`)
+    return ok
+  }
+  catch (err) {
+    console.warn(`[amazon] could not set the delivery address on ${origin}`, err)
+    return false
+  }
 }
 
 /** Loads the page; on the "Continue shopping" interstitial, clicks the button like a visitor would. */
